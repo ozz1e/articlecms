@@ -24,3 +24,4 @@ use Dcat\Admin\Show;
  * Admin::js('/packages/prettydocs/js/main.js');
  *
  */
+Admin::js('/assets/js/viewImg.js?v='.time());

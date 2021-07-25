@@ -184,7 +184,7 @@ $(function () {
         if (!files.length) {
             return;
         }
-        
+
         Dcat.confirm('确认要删除这些吗？', null, function () {
             $.ajax({
                 method: 'delete',
@@ -306,7 +306,7 @@ $(function () {
                                 @unless($item['isDir'])
                                 <a class="btn" target="_blank" title="下载" href="{{ $item['download'] }}"><i class="fa fa-download"></i></a>
                                 @endunless
-                                <a class="btn" title="获取链接" data-toggle="modal" data-target="#urlModal" data-url="{{ $item['url'] }}"><i class="fa fa-internet-explorer"></i></a>
+{{--                                <a class="btn" title="获取链接" data-toggle="modal" data-target="#urlModal" data-url="{{ $item['url'] }}"><i class="fa fa-internet-explorer"></i></a>--}}
                             </div>
 
                         </td>
@@ -350,24 +350,24 @@ $(function () {
     </div>
 </div>
 
-<div class="modal fade" id="urlModal" tabindex="-1" role="dialog" aria-labelledby="urlModalLabel">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="urlModalLabel">获取链接</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <input type="text" class="form-control" />
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">关闭</button>
-            </div>
-        </div>
-    </div>
-</div>
+{{--<div class="modal fade" id="urlModal" tabindex="-1" role="dialog" aria-labelledby="urlModalLabel">--}}
+{{--    <div class="modal-dialog" role="document">--}}
+{{--        <div class="modal-content">--}}
+{{--            <div class="modal-header">--}}
+{{--                <h4 class="modal-title" id="urlModalLabel">获取链接</h4>--}}
+{{--                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>--}}
+{{--            </div>--}}
+{{--            <div class="modal-body">--}}
+{{--                <div class="form-group">--}}
+{{--                    <input type="text" class="form-control" />--}}
+{{--                </div>--}}
+{{--            </div>--}}
+{{--            <div class="modal-footer">--}}
+{{--                <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">关闭</button>--}}
+{{--            </div>--}}
+{{--        </div>--}}
+{{--    </div>--}}
+{{--</div>--}}
 
 <div class="modal fade" id="newFolderModal" tabindex="-1" role="dialog" aria-labelledby="newFolderModalLabel">
     <div class="modal-dialog" role="document">

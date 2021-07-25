@@ -178,6 +178,14 @@ class MediaManager extends AdminController
 
         $preview = "<a href=\"$url\"><span class=\"file-icon text-aqua\"><i class=\"fa fa-folder\"></i></span></a>";
 
+        //显示资源列表时排除本项目目录
+        $basePathArr = explode(DIRECTORY_SEPARATOR,base_path());
+        $appName = $basePathArr[count($basePathArr)-1];
+        $baseDirIndex = array_search($appName,$dirs);
+         if( $baseDirIndex !== false ){
+             unset($dirs[$baseDirIndex]);
+         }
+
         $dirs = array_map(function ($dir) use ($preview) {
             return [
                 'download'  => '',
@@ -224,7 +232,15 @@ class MediaManager extends AdminController
 
                 if ($this->storage->getDriver()->getConfig()->has('url')) {
                     $url = $this->storage->url($file);
-                    $preview = "<span class=\"file-icon has-img\"><img src=\"$url\" alt=\"Attachment\"></span>";
+                    if($fp = fopen($url,"rb", 0))
+                    {
+                        $gambar = fread($fp,filesize($url));
+                        fclose($fp);
+                        $base64 = chunk_split(base64_encode($gambar));
+                    }else{
+                        $base64 = $url;
+                    }
+                    $preview = "<span class=\"file-icon has-img\"><img class='pic' src='data:image/jpg/png/gif;base64,".$base64."'></span>";
                 } else {
                     $preview = '<span class="file-icon"><i class="fa fa-file-image-o"></i></span>';
                 }

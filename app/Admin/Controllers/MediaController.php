@@ -21,6 +21,11 @@ class MediaController extends AdminController
     {
         $path = \request('path', '/');
         $view = \request('view', 'table');
+
+        $html = '<div id="outerdiv" style="position:fixed;top:0;left:0;background:rgba(0,0,0,0.7);z-index:2;width:100%;height:100%;display:none;">';
+        $html .= '<div id="innerdiv" style="position:absolute;"><img id="bigimg" style="border:5px solid #fff;" src="" /></div>';
+        Admin::html($html);
+
         $manager = new MediaManager($path);
         return $content->header('文件管理')->description('点击路径名可快速跳转相应文件夹')->body(view($view,[
             'list'   => $manager->ls(),
