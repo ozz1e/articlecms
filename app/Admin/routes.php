@@ -22,5 +22,7 @@ Route::group([
     $router->put('media/move', 'MediaController@move')->name('media-move');
     $router->post('media/upload', 'MediaController@upload')->name('media-upload');
     $router->post('media/folder', 'MediaController@newFolder')->name('media-new-folder');
+    //作者管理
+    $router->resource('editor', 'EditorController');
 
 });

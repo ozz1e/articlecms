@@ -5,6 +5,8 @@ use Dcat\Admin\Grid;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid\Filter;
 use Dcat\Admin\Show;
+use App\Admin\Extensions\Form\CKEditor;
+
 
 /**
  * Dcat-admin - admin builder based on Laravel.
@@ -25,3 +27,13 @@ use Dcat\Admin\Show;
  *
  */
 Admin::js('/assets/js/viewImg.js?v='.time());
+
+// 注册前端组件别名
+Admin::asset()->alias('@ckeditor', [
+    'js' => [
+        '/packages/ckeditor/ckeditor.js',
+        '/packages/ckeditor/adapters/jquery.js',
+    ],
+]);
+
+Form::extend('ckeditor', CKEditor::class);
