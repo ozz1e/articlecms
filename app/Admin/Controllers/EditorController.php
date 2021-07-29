@@ -13,8 +13,23 @@ class EditorController extends  AdminController
 {
     protected function grid()
     {
-        return Grid::make(new Editor(), function (Grid $grid) {
+        return Grid::make(\App\Models\Editor::with(['lang']), function (Grid $grid) {
             $grid->column('id');
+            $grid->column('lang.lang_name','语言');
+            $grid->column('editor_name');
+            $grid->column('editor_avatar')->image('',50,50);
+            $grid->column('editor_attr')
+                ->display('查看') // 设置按钮名称
+                ->modal(function ($modal) {
+                    // 设置弹窗标题
+                    $modal->title('标题 '.$this->username);
+
+                    // 自定义图标
+                    $modal->icon('feather icon-eye');
+
+
+                    return "<div style='padding:10px 10px 0'>asdasdasd</div>";
+                });
 
             $grid->column('created_at')->display(function ($created_at){
                 return $created_at;

@@ -13,4 +13,9 @@ class Editor extends Model
     protected $table = 'editor';
 
     protected $dateFormat = 'U';
+
+    public function lang()
+    {
+        return $this->belongsTo(Lang::class,'lang_id','id');
+    }
 }

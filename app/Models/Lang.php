@@ -13,4 +13,9 @@ class Lang extends Model
     protected $table = 'lang';
 
     protected $dateFormat = 'U';
+
+    public function editor()
+    {
+        return $this->hasMany(Editor::class,'id','lang_id');
+    }
 }
