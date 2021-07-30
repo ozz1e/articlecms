@@ -18,4 +18,9 @@ class Editor extends Model
     {
         return $this->belongsTo(Lang::class,'lang_id','id');
     }
+
+    public function attr()
+    {
+        return $this->hasMany(EditorAttr::class,'editor_id','id');
+    }
 }
