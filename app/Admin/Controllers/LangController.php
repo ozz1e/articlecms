@@ -26,7 +26,7 @@ class LangController extends AdminController
             $grid->column('updated_at')->display(function($updated_at){
                 return $updated_at;
             });
-            // 禁用
+            // 禁用行选择器
             $grid->disableRowSelector();
             // 禁用过滤器按钮
             $grid->disableFilterButton();
@@ -38,6 +38,7 @@ class LangController extends AdminController
             $grid->disableEditButton();
             // 显示快捷编辑按钮
             $grid->showQuickEditButton();
+            //弹窗创建
             $grid->enableDialogCreate();
             // 设置弹窗宽高，默认值为 '700px', '670px'
             $grid->setDialogFormDimensions('50%', '30%');

@@ -13,7 +13,7 @@ return [
         'lang_name'=>'语言',
         'editor_name'      => '作者名称',
         'editor_avatar' =>'头像',
-        'editor_attr'=>'作者信息',
+        'attr'=>'作者信息',
         'created_at' => '创建时间',
         'updated_at'    => '更新时间',
     ],

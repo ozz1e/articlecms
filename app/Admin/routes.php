@@ -24,5 +24,7 @@ Route::group([
     $router->post('media/folder', 'MediaController@newFolder')->name('media-new-folder');
     //作者管理
     $router->resource('editor', 'EditorController');
+    $router->post('editor/createEditor', 'EditorController@createEditor');
+    $router->post('editor/uploadAvatar', 'EditorController@uploadAvatar');
 
 });
