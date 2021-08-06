@@ -14,6 +14,8 @@ class Editor extends Model
 
     protected $dateFormat = 'U';
 
+    protected $fillable = ['editor_name','lang_id','editor_intro','editor_avatar','type'];
+
     public function lang()
     {
         return $this->belongsTo(Lang::class,'lang_id','id');

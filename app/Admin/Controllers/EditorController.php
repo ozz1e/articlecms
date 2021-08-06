@@ -13,6 +13,7 @@ use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Layout\Content;
 use Dcat\Admin\Widgets\Modal;
 use Dcat\Admin\Traits\HasUploadedFile;
+use Illuminate\Support\Facades\Log;
 
 class EditorController extends  AdminController
 {
@@ -81,6 +82,10 @@ class EditorController extends  AdminController
                 $form->keyValue('attr')->setKeyLabel('属性名')->setValueLabel('属性值');;
 
                 $form->action('editor/createEditor');
+
+            if ($form->isEditing()) {
+                $form->action('editor/updateEditor');
+            }
         });
     }
 
@@ -90,11 +95,22 @@ class EditorController extends  AdminController
         $data = $request->all();
 
         try{
-            $result = $service->setName($data['editor_name'])
+            $editor = $service->setName($data['editor_name'])
                 ->setLangId($data['lang_id'])
                 ->setIntro($data['editor_intro'])
-                ->setAvatar($data['editor_avatar'])
-                ->index();
+                ->setAvatar($data['editor_avatar']);
+
+            if( array_key_exists('keys',$data['attr'])){
+                foreach ($data['attr']['keys'] as $key=>$item) {
+                    if( empty($item) ){
+                        unset($data['attr']['keys'][$key]);
+                        unset($data['attr']['values'][$key]);
+                    }
+                }
+
+                $editor->setAttr($data['attr']);
+            }
+            $result = $editor->create();
 
             $form = new Form();
             if( $result ){
@@ -103,10 +119,8 @@ class EditorController extends  AdminController
                 return $form->response()->error('添加失败');
             }
 
-
-
         }catch (\Exception $exception){
-
+            Log::error($exception->getMessage());
         }
 
 

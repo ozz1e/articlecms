@@ -5,6 +5,8 @@ namespace App\Services;
 
 
 use App\Models\Editor;
+use App\Models\EditorAttr;
+use Illuminate\Support\Facades\DB;
 
 class EditorService
 {
@@ -16,6 +18,8 @@ class EditorService
     private $editorIntro;
     //作者头像
     private $editorAvatar;
+    //作者属性
+    private $editorAttr;
 
     public function setName($name = '')
     {
@@ -41,21 +45,41 @@ class EditorService
         return $this;
     }
 
-    public function index()
+    public function setAttr($attr = [])
     {
-//        Editor::create([
-//            'editor_name'=>$this->editorName,
-//            'lang_id'=>$this->langId,
-//            'editor_intro'=>$this->editorIntro,
-//            'editor_avatar'=>$this->editorAvatar,
-//            'type'=>0,
-//        ]);
-        $editor = new Editor();
-        $editor->editor_name = $this->editorName;
-        $editor->lang_id = $this->langId;
-        $editor->editor_intro = $this->editorIntro;
-        $editor->editor_avatar = $this->editorAvatar;
-        $editor->save();
+        $this->editorAttr = $attr;
+        return $this;
+    }
+
+    public function create()
+    {
+        DB::beginTransaction();
+
+        $newEditor = Editor::create([
+            'editor_name'=>$this->editorName,
+            'lang_id'=>$this->langId,
+            'editor_intro'=>$this->editorIntro,
+            'editor_avatar'=>$this->editorAvatar
+        ]);
+
+        $attrArr = $this->editorAttr;
+
+        if( !is_null($attrArr) ){
+            $attrInsertArr = [];
+
+            foreach ($attrArr['keys'] as $key=>$item) {
+                $attrInsertArr[$key]['editor_id'] = $newEditor->id;
+                $attrInsertArr[$key]['key'] = $item;
+                $attrInsertArr[$key]['value'] = $attrArr['values'][$key];
+            }
+            $newEditorAttr = EditorAttr::insert($attrInsertArr);
+            if( !$newEditorAttr ){
+                DB::rollBack();
+                return false;
+            }
+        }
+
+        DB::commit();
 
         return true;
     }
