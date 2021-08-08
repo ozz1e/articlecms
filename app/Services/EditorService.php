@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class EditorService
 {
+    //作者id
+    private $editorId;
     //作者名称
     private $editorName;
     //语言id
@@ -20,6 +22,12 @@ class EditorService
     private $editorAvatar;
     //作者属性
     private $editorAttr;
+
+    public function setEditorId($id = 1)
+    {
+        $this->editorId = $id;
+        return $this;
+    }
 
     public function setName($name = '')
     {
@@ -51,10 +59,15 @@ class EditorService
         return $this;
     }
 
+    /**
+     * 执行创建作者
+     * @return bool
+     */
     public function create()
     {
         DB::beginTransaction();
 
+        //创建并获取新建的作者对象
         $newEditor = Editor::create([
             'editor_name'=>$this->editorName,
             'lang_id'=>$this->langId,
@@ -64,13 +77,11 @@ class EditorService
 
         $attrArr = $this->editorAttr;
 
+        //如果提交数据包含作者属性则在作者属性表插入对应的数据
         if( !is_null($attrArr) ){
-            $attrInsertArr = [];
-
-            foreach ($attrArr['keys'] as $key=>$item) {
+            $attrInsertArr = array_values($attrArr) ;
+            foreach ( $attrInsertArr as $key=>$item) {
                 $attrInsertArr[$key]['editor_id'] = $newEditor->id;
-                $attrInsertArr[$key]['key'] = $item;
-                $attrInsertArr[$key]['value'] = $attrArr['values'][$key];
             }
             $newEditorAttr = EditorAttr::insert($attrInsertArr);
             if( !$newEditorAttr ){
@@ -82,6 +93,11 @@ class EditorService
         DB::commit();
 
         return true;
+    }
+
+    public function update()
+    {
+
     }
 
 }

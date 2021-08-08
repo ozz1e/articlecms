@@ -4,7 +4,7 @@
 namespace App\Admin\Controllers;
 
 use App\Admin\Repositories\Editor;
-use App\Http\Requests\CreateEditorRequest;
+use App\Http\Requests\EditorRequest;
 use App\Models\Lang;
 use App\Services\EditorService;
 use Dcat\Admin\Form;
@@ -78,41 +78,54 @@ class EditorController extends  AdminController
                 $form->select('lang_id','语言')->required()->options($langSelectList);
                 $form->textarea('editor_intro','简介');
                 $form->image('editor_avatar')->required()->url('editor/uploadAvatar');
-//                $form->image('editor_avatar')->required()->autoUpload();
-                $form->keyValue('attr')->setKeyLabel('属性名')->setValueLabel('属性值');;
-
                 $form->action('editor/createEditor');
 
             if ($form->isEditing()) {
-                $form->action('editor/updateEditor');
+                $editorId = $form->model()->id;
+                $form->model()->attr->toArray();
+                $form->action('editor/'.$editorId.'/updateEditor');
             }
+
+            $form->table('attr',function ($table)
+            {
+                $table->text('key','属性名')->required();
+                $table->text('value','属性值')->required();
+            });
+
+
         });
     }
 
-    public function createEditor(CreateEditorRequest $request,EditorService $service)
+    /**
+     * 执行添加作者
+     * @param EditorRequest $request
+     * @param EditorService $service
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
+    public function createEditor(EditorRequest $request, EditorService $service)
     {
 
         $data = $request->all();
-
+        $form = new Form();
         try{
             $editor = $service->setName($data['editor_name'])
                 ->setLangId($data['lang_id'])
                 ->setIntro($data['editor_intro'])
                 ->setAvatar($data['editor_avatar']);
 
-            if( array_key_exists('keys',$data['attr'])){
-                foreach ($data['attr']['keys'] as $key=>$item) {
-                    if( empty($item) ){
-                        unset($data['attr']['keys'][$key]);
-                        unset($data['attr']['values'][$key]);
+            //请求数据中有作者属性则增加添加属性操作
+            if( array_key_exists('attr',$data)){
+                foreach ($data['attr'] as $key=>$item) {
+                    //_remove_为1说明动态增加的该键值对被删除
+                    if( $item['_remove_'] == '1' ){
+                        unset($data['attr'][$key]);
                     }
+                    unset($data['attr'][$key]['_remove_']);
                 }
-
                 $editor->setAttr($data['attr']);
             }
-            $result = $editor->create();
 
-            $form = new Form();
+            $result = $editor->create();
             if( $result ){
                 return $form->response()->success('添加成功')->redirect('/editor');
             }else{
@@ -120,11 +133,28 @@ class EditorController extends  AdminController
             }
 
         }catch (\Exception $exception){
-            Log::error($exception->getMessage());
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('添加失败');
+        }
+
+    }
+
+    public function updateEditor(EditorRequest $request)
+    {
+        $data = $request->all();
+        $editorId = $request->route('id');
+        $form = new Form();
+
+        try{
+
+        }catch (\Exception $exception){
+
         }
 
 
     }
+
+
     public function uploadAvatar()
     {
         $disk= $this->disk('admin');

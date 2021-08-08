@@ -11,7 +11,6 @@ Route::group([
     'namespace'  => config('admin.route.namespace'),
     'middleware' => config('admin.route.middleware'),
 ], function (Router $router) {
-
     $router->get('/', 'HomeController@index');
     //语言管理
     $router->resource('lang', 'LangController');
@@ -25,6 +24,8 @@ Route::group([
     //作者管理
     $router->resource('editor', 'EditorController');
     $router->post('editor/createEditor', 'EditorController@createEditor');
+    $router->put('editor/{id}/updateEditor', 'EditorController@updateEditor');
     $router->post('editor/uploadAvatar', 'EditorController@uploadAvatar');
+
 
 });
