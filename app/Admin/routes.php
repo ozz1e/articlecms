@@ -26,6 +26,7 @@ Route::group([
     $router->post('editor/createEditor', 'EditorController@createEditor');
     $router->put('editor/{id}/updateEditor', 'EditorController@updateEditor');
     $router->post('editor/uploadAvatar', 'EditorController@uploadAvatar');
+    $router->delete('editor/{id}/deleteEditor','EditorController@deleteEditor');
 
 
 });

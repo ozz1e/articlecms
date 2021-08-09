@@ -23,11 +23,40 @@ class EditorRequest extends FormRequest
      */
     public function rules()
     {
-        return [
-            'editor_name'=>'required|unique:editor,editor_name',
-            'lang_id'=>'required|numeric|min:1',
-            'editor_avatar'=>'required',
-        ];
+        switch($this->method())
+        {
+            // CREATE
+            case 'POST':
+            {
+                return [
+                    'editor_name'=>'required|unique:editor,editor_name',
+                    'lang_id'=>'required|numeric|min:1',
+                    'editor_avatar'=>'required',
+                ];
+            }
+            // UPDATE
+            case 'PUT':
+            case 'PATCH':
+            {
+                return [
+                    'editor_name'=>'required',
+                    'lang_id'=>'required|numeric|min:1',
+                    'editor_avatar'=>'required',
+                ];
+            }
+            case 'GET':
+            case 'DELETE':
+            {
+                return [
+                    'id'=>'required|numeric',
+                ];
+            }
+            default:
+            {
+                return [];
+            }
+        }
+
     }
 
     /**
@@ -38,6 +67,8 @@ class EditorRequest extends FormRequest
     public function messages()
     {
         return [
+            'id.required'=>'作者ID不能为空',
+            'id.numeric'=>'作者ID必须为数字',
             'editor_name.required' => '请填写作者名称',
             'editor_name.unique'=>'作者名称已存在',
             'lang_id.required'=>'请选择语言',

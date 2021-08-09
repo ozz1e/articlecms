@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Editor;
 use App\Models\EditorAttr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EditorService
 {
@@ -76,7 +77,6 @@ class EditorService
         ]);
 
         $attrArr = $this->editorAttr;
-
         //如果提交数据包含作者属性则在作者属性表插入对应的数据
         if( !is_null($attrArr) ){
             $attrInsertArr = array_values($attrArr) ;
@@ -95,9 +95,60 @@ class EditorService
         return true;
     }
 
+    /**
+     * 执行更新作者
+     * @return bool
+     */
     public function update()
     {
+        DB::beginTransaction();
 
+        $editor = Editor::find(intval($this->editorId));
+        if( !$editor ){
+            Log::info('未找到ID为'.$this->editorId.'的作者信息');
+            return false;
+        }
+        $editor->editor_name = $this->editorName;
+        $editor->lang_id = $this->langId;
+        $editor->editor_intro = $this->editorIntro;
+        $editor->editor_avatar = $this->editorAvatar;
+        if( !$editor->save() ){
+            DB::rollBack();
+            return false;
+        }
+
+        if( !is_null($this->editorAttr) ){
+//            $orginAttr = EditorAttr::where('editor_id','=',$this->editorId)->get()->toArray();
+            $attrArr = array_values($this->editorAttr);
+            //_remove_为1的表示前端已删除改键值对
+            foreach ($attrArr as $item) {
+                if( $item['_remove_'] == 1 && $item['id'] != null){ //删除属性
+                    if( !EditorAttr::destroy($item['id']) ){
+                        Log::info('ID为'.$this->editorId.'的作者属性 '.$item['key'].' 删除失败');
+                        DB::rollBack();
+                        return false;
+                    }
+                }else if( $item['_remove_'] != 1 && $item['id'] == null){ //添加属性
+                    if( !EditorAttr::create(['editor_id'=>$this->editorId,'key'=>$item['key'],'value'=>$item['value']]) ){
+                        Log::info('ID为'.$this->editorId.'的作者属性 '.$item['key'].' 添加失败');
+                        DB::rollBack();
+                        return false;
+                    }
+                }else{ //修改属性
+                    $attrInfo = EditorAttr::findOrFail($item['id']);
+                    $attrInfo->key = $item['key'];
+                    $attrInfo->value = $item['value'];
+                    if( !$attrInfo->save() ){
+                        Log::info('ID为'.$this->editorId.'的作者属性 '.$item['key'].' 修改失败');
+                        DB::rollBack();
+                        return false;
+                    }
+                }
+
+            }
+        }
+        DB::commit();
+        return true;
     }
 
 }

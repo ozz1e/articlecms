@@ -3,6 +3,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Actions\DeleteEditor;
 use App\Admin\Repositories\Editor;
 use App\Http\Requests\EditorRequest;
 use App\Models\Lang;
@@ -38,6 +39,15 @@ class EditorController extends  AdminController
                     ->body($tbody)
                     ->button('<button class="btn btn-primary">查看</button>');
                 return $modal;
+            });
+
+
+            $grid->actions(function (Grid\Displayers\Actions $actions) {
+                //禁用默认的删除按钮
+                $actions->disableDelete();
+                // append一个操作
+                $id = $actions->row->id;
+                $actions->append(new DeleteEditor($id));
             });
 
             $grid->column('created_at')->display(function ($created_at){
@@ -80,16 +90,22 @@ class EditorController extends  AdminController
                 $form->image('editor_avatar')->required()->url('editor/uploadAvatar');
                 $form->action('editor/createEditor');
 
-            if ($form->isEditing()) {
                 $editorId = $form->model()->id;
+
+            if ($form->isEditing()) {
                 $form->model()->attr->toArray();
                 $form->action('editor/'.$editorId.'/updateEditor');
+            }
+
+            if ($form->isDeleting()) {
+                $form->action('editor/'.$editorId.'/deleteEditor');
             }
 
             $form->table('attr',function ($table)
             {
                 $table->text('key','属性名')->required();
                 $table->text('value','属性值')->required();
+                $table->hidden('id');
             });
 
 
@@ -139,19 +155,49 @@ class EditorController extends  AdminController
 
     }
 
-    public function updateEditor(EditorRequest $request)
+    /**
+     * 执行更新作者
+     * @param EditorRequest $request
+     * @param EditorService $service
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
+    public function updateEditor(EditorRequest $request, EditorService $service)
     {
         $data = $request->all();
         $editorId = $request->route('id');
         $form = new Form();
 
         try{
+            $editor = $service->setEditorId($editorId)
+                ->setName($data['editor_name'])
+                ->setLangId($data['lang_id'])
+                ->setIntro($data['editor_intro'])
+                ->setAvatar($data['editor_avatar']);
+
+            //请求数据中有作者属性则增加添加属性操作
+            if( array_key_exists('attr',$data)){
+                $editor->setAttr($data['attr']);
+            }
+
+            $result = $editor->update();
+            if( $result ){
+                return $form->response()->success('修改成功')->redirect('/editor');
+            }else{
+                return $form->response()->error('修改失败');
+            }
 
         }catch (\Exception $exception){
-
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('修改失败');
         }
 
 
+    }
+
+    public function deleteEditor(EditorRequest $request, EditorService $service)
+    {
+        $data = $request->all();
+        dd($data);
     }
 
 
