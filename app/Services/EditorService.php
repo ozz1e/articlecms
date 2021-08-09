@@ -151,4 +151,31 @@ class EditorService
         return true;
     }
 
+    public function delete()
+    {
+        DB::beginTransaction();
+
+        $editor = Editor::find(intval($this->editorId));
+        $avatarFilePath = public_path('uploads').$editor->editor_avatar;
+        if( !$editor ){
+            Log::info('未找到ID为'.$this->editorId.'的作者信息');
+            return false;
+        }
+        if( !$editor->delete() ){
+            DB::rollBack();
+            return false;
+        }
+        //删除作者的属性
+        if( !EditorAttr::where('editor_id','=',$this->editorId)->delete() ){
+            DB::rollBack();
+            return false;
+        }
+        //删除作者头像的图片文件
+        if( is_file($avatarFilePath) ){
+            unlink($avatarFilePath);
+        }
+        DB::commit();
+        return true;
+    }
+
 }

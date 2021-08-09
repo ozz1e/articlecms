@@ -47,9 +47,7 @@ class EditorRequest extends FormRequest
             case 'GET':
             case 'DELETE':
             {
-                return [
-                    'id'=>'required|numeric',
-                ];
+
             }
             default:
             {
@@ -67,8 +65,6 @@ class EditorRequest extends FormRequest
     public function messages()
     {
         return [
-            'id.required'=>'作者ID不能为空',
-            'id.numeric'=>'作者ID必须为数字',
             'editor_name.required' => '请填写作者名称',
             'editor_name.unique'=>'作者名称已存在',
             'lang_id.required'=>'请选择语言',

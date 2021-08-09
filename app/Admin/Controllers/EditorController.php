@@ -14,6 +14,7 @@ use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Layout\Content;
 use Dcat\Admin\Widgets\Modal;
 use Dcat\Admin\Traits\HasUploadedFile;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class EditorController extends  AdminController
@@ -164,8 +165,13 @@ class EditorController extends  AdminController
     public function updateEditor(EditorRequest $request, EditorService $service)
     {
         $data = $request->all();
-        $editorId = $request->route('id');
         $form = new Form();
+        //作者id不在表单提交的数据里 所以单独验证
+        $editorId = $request->route('id');
+        if( !is_numeric($editorId) ){
+            return $form->response()->error('提交作者信息有误');
+        }
+
 
         try{
             $editor = $service->setEditorId($editorId)
@@ -194,10 +200,28 @@ class EditorController extends  AdminController
 
     }
 
-    public function deleteEditor(EditorRequest $request, EditorService $service)
+    public function deleteEditor(Request $request,EditorService $service)
     {
-        $data = $request->all();
-        dd($data);
+        $form = new Form();
+        //作者id不在表单提交的数据里 所以单独验证
+        $editorId = $request->route('id');
+        if( !is_numeric($editorId) ){
+            return $form->response()->error('提交作者信息有误');
+        }
+
+        try{
+            $result = $service->setEditorId($editorId)
+                ->delete();
+            if( $result ){
+                return $form->response()->success('删除成功')->redirect('/editor');
+            }else{
+                return $form->response()->error('删除失败');
+            }
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('删除失败');
+        }
+
     }
 
 
