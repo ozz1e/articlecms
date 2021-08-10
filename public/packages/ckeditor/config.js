@@ -34,12 +34,12 @@ CKEDITOR.editorConfig = function (config) {
     config.removePlugins = 'image,easyimage,cloudservices';
     config.baseFloatZIndex = 10005;
 
-    config.filebrowserBrowseUrl = '../0d958d0af15d73beeec6852c13911a700/ckfinder.html';
-    config.filebrowserImageBrowseUrl = '../0d958d0af15d73beeec6852c13911a700/ckfinder.html';
-    config.filebrowserFlashBrowseUrl = '../0d958d0af15d73beeec6852c13911a700/ckfinder.html';
-    config.filebrowserUploadUrl = '../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=Files';
-    config.filebrowserImageUploadUrl = '../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=screenshot';
-    config.filebrowserFlashUploadUrl = '../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=Flash';
+    config.filebrowserBrowseUrl = '../../../../0d958d0af15d73beeec6852c13911a700/ckfinder.html';
+    config.filebrowserImageBrowseUrl = '../../../../0d958d0af15d73beeec6852c13911a700/ckfinder.html';
+    config.filebrowserFlashBrowseUrl = '../../../../0d958d0af15d73beeec6852c13911a700/ckfinder.html';
+    config.filebrowserUploadUrl = '../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=Files';
+    config.filebrowserImageUploadUrl = '../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=screenshot';
+    config.filebrowserFlashUploadUrl = '../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=Flash';
 
     config.image2_alignClasses = ['align-left', 'align-center', 'align-right'];
     config.image2_captionedClass = 'image-captioned';

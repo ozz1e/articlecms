@@ -156,7 +156,8 @@ class EditorService
         DB::beginTransaction();
 
         $editor = Editor::find(intval($this->editorId));
-        $avatarFilePath = public_path('uploads').$editor->editor_avatar;
+        $avatarFilePath = public_path('uploads').DIRECTORY_SEPARATOR.$editor->editor_avatar;
+
         if( !$editor ){
             Log::info('未找到ID为'.$this->editorId.'的作者信息');
             return false;

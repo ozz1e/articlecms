@@ -67,7 +67,7 @@ class EditorController extends  AdminController
 
 
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id');
+                $filter->equal('editor_name');
 
             });
         });
@@ -76,7 +76,7 @@ class EditorController extends  AdminController
     protected function form()
     {
         return Form::make(new Editor(), function (Form $form) {
-//            $form->ckeditor('content');
+            $form->ckeditor('content');
                 $form->text('editor_name')->required()->rules('regex:/^[a-zA-Z\d]+$/|unique:editor,editor_name',[
                     'regex'=>'作者名称必须为字母',
                     'unique'=>'作者名称已存在'
@@ -90,6 +90,12 @@ class EditorController extends  AdminController
                 $form->textarea('editor_intro','简介');
                 $form->image('editor_avatar')->required()->url('editor/uploadAvatar');
                 $form->action('editor/createEditor');
+                //去掉底部查看按钮
+                $form->disableViewCheck();
+                //去掉继续编辑
+                $form->disableEditingCheck();
+                //去掉继续创建
+                $form->disableCreatingCheck();
 
                 $editorId = $form->model()->id;
 
