@@ -29,6 +29,9 @@ Route::group([
     $router->delete('editor/{id}/deleteEditor','EditorController@deleteEditor');
     //图片管理
     $router->get('image','ImageController@index');
+    //模板管理
+    $router->resource('template','TemplateController');
+    $router->any('template/{id}/editOnLine','TemplateController@dialogForm');
 
 
 });

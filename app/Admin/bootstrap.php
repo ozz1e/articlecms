@@ -1,11 +1,9 @@
 <?php
 
 use Dcat\Admin\Admin;
-use Dcat\Admin\Grid;
 use Dcat\Admin\Form;
-use Dcat\Admin\Grid\Filter;
-use Dcat\Admin\Show;
 use App\Admin\Extensions\Form\CKEditor;
+use App\Admin\Extensions\Form\PHPEditor;
 
 
 /**
@@ -37,3 +35,19 @@ Admin::asset()->alias('@ckeditor', [
 ]);
 
 Form::extend('ckeditor', CKEditor::class);
+
+Admin::asset()->alias('@phpeditor', [
+    'js' => [
+        '/packages/codemirror-5.62.2/lib/codemirror.js',
+        '/packages/codemirror-5.62.2/addon/edit/matchbrackets.js',
+        '/packages/codemirror-5.62.2/mode/htmlmixed/htmlmixed.js',
+        '/packages/codemirror-5.62.2/mode/xml/xml.js',
+        '/packages/codemirror-5.62.2/mode/javascript/javascript.js',
+        '/packages/codemirror-5.62.2/mode/css/css.js',
+        '/packages/codemirror-5.62.2/mode/clike/clike.js',
+        '/packages/codemirror-5.62.2/mode/php/php.js',
+    ],
+    'css' => '/packages/codemirror-5.62.2/lib/codemirror.css',
+]);
+
+Form::extend('php', PHPEditor::class);
