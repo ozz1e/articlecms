@@ -24,10 +24,10 @@
             }
         }
     });
-    // Editor.setValue('asdasdadadasd');
+    Editor.setSize('auto','800');
     Editor.on("change", function (Editor, changes) {
         let val = Editor.getValue();
         // console.log(val);
-        $this.parents('.form-field').find('input[name="hidden"]').val(val);
+        $this.parents('.form-field').find('input[name=code]').val(val);
     });
 </script>

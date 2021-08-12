@@ -19,7 +19,7 @@ class TemplateController extends  AdminController
     {
         return Grid::make(\App\Models\Template::with(['lang']),function (Grid $grid){
             $grid->column('id');
-            $grid->column('temp_name','模板名称(可直接修改模板名称)')->editable(true);
+            $grid->column('temp_name','模板名称(点击可修改模板名称)')->editable(true);
             $grid->column('lang.lang_name','语言');
             $grid->column('type')->display(function($type){
                 if( $type == 2 ){
@@ -36,7 +36,7 @@ class TemplateController extends  AdminController
                 // 获取当前行主键值
                 $id = $actions->getKey();
                 // prepend一个操作
-                $actions->prepend('<a href="template/1/editOnLine"><i class="fa fa-paper-plane"></i> 编辑</a>');
+                $actions->prepend('<a href="template/'.$id.'/editOnLine"><i class="fa fa-paper-plane"></i> 编辑</a>');
             });
             // 禁用详情按钮
             $grid->disableViewButton();
@@ -46,7 +46,6 @@ class TemplateController extends  AdminController
     protected function form()
     {
         return Form::make(new Template(), function (Form $form) {
-            $form->php('code')->value('11111111111111111111');
             $langSearchList = Lang::all(['id','lang_name'])->toArray();
             $langSelectList = [];
             foreach ($langSearchList as $item) {
@@ -68,31 +67,60 @@ class TemplateController extends  AdminController
         });
     }
 
-    protected function build()
+    /**
+     * 在线编辑模板文件
+     * @param Content $content
+     * @param Request $request
+     * @return Content
+     */
+    public function editTemplate(Content $content,Request $request)
     {
-        Form::dialog('编辑角色')
-            ->click('.edit-form')
-            ->success('Dcat.reload()'); // 编辑成功后刷新页面
+        $form = new Form();
+        $form->title('编辑');
+        //去掉底部查看按钮
+        $form->disableViewCheck();
+        //去掉继续编辑
+        $form->disableEditingCheck();
+        //去掉继续创建
+        $form->disableCreatingCheck();
+        //去掉重置创建
+        $form->disableResetButton();
+        $templateId = $request->route()->id;
+        $form->action('template/'.$templateId.'/saveTemplate');
+        $form->confirm('您确定要保存编辑内容吗？', '保存后会直接覆盖原文件，请谨慎操作！');
 
-        // 当需要在同个“class”的按钮中绑定不同的链接时，把链接放到按钮的“data-url”属性中即可
-        $editPage = admin_base_path('auth/roles/1/edit');
+        $title = '';
+        $fileContent = '';
+        $id = $request->route('id');
+        if( is_numeric($id) ){
+            $template = \App\Models\Template::select(['id','temp_name','file_path'])->find($id);
+            if( !is_null($template) ){
+                $templateArr = $template->toArray();
+                $title = $templateArr['temp_name'];
+                $filePath = public_path('uploads'.DIRECTORY_SEPARATOR).$templateArr['file_path'];
+                is_file($filePath) and $fileContent = file_get_contents($filePath);
+            }
+        }
 
-        return "
-<div style='padding:30px 0'>
-    <span class='btn btn-success create-form'> 新增表单弹窗 </span> &nbsp;&nbsp;
-    <span class='btn btn-blue edit-form' data-url='{$editPage}'> 编辑表单弹窗 </span>
-</div>
-";
+        $form->php('code',$title)->help('若未找到文件则显示空白,点击保存仍会生成相应内容的html文件')->value($fileContent);
+        return $content
+            ->header('在线修改模板文件')
+            ->body($form);
     }
 
-    public function dialogForm(Content $content,Request $request)
+    public function saveTemplate(Request $request)
     {
-        dd($request->route('id'));
-        $form = new Form();
-        $form->php('code','样式文件代码')->value('sfsdfsdfsdf');
-        return $content
-            ->header('Modal Form')
-            ->body($form);
+//        dd($request->all());
+        $id = $request->route('id');
+        if( is_numeric($id) ){
+            $template = \App\Models\Template::select(['file_path'])->find($id);
+            if( !is_null($template) ){
+                $templateArr = $template->toArray();
+                $title = $templateArr['temp_name'];
+                $filePath = public_path('uploads'.DIRECTORY_SEPARATOR).$templateArr['file_path'];
+
+            }
+        }
     }
 
 }

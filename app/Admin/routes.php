@@ -31,7 +31,7 @@ Route::group([
     $router->get('image','ImageController@index');
     //模板管理
     $router->resource('template','TemplateController');
-    $router->any('template/{id}/editOnLine','TemplateController@dialogForm');
-
+    $router->get('template/{id}/editOnLine','TemplateController@editTemplate');
+    $router->post('template/{id}/saveTemplate','TemplateController@saveTemplate');
 
 });
