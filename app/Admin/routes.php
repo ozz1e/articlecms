@@ -34,5 +34,7 @@ Route::group([
     $router->get('template/{id}/editOnLine','TemplateController@editTemplate');
     $router->post('template/{id}/saveTemplate','TemplateController@saveTemplate');
     $router->delete('template/{id}/delete','TemplateController@deleteTemplate');
+    //文章目录
+    $router->resource('directory','DirectoryController');
 
 });
