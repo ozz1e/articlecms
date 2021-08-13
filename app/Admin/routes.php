@@ -33,5 +33,6 @@ Route::group([
     $router->resource('template','TemplateController');
     $router->get('template/{id}/editOnLine','TemplateController@editTemplate');
     $router->post('template/{id}/saveTemplate','TemplateController@saveTemplate');
+    $router->delete('template/{id}/delete','TemplateController@deleteTemplate');
 
 });

@@ -33,11 +33,18 @@ class TemplateController extends  AdminController
             $grid->column('created_at')->display(function ($created_at){
                 return $created_at;
             });
+            $grid->column('updated_at')->display(function ($updated_at){
+                return $updated_at;
+            });
             $grid->actions(function (Grid\Displayers\Actions $actions) {
+                $actions->disableEdit();
+                $actions->disableDelete();
                 // 获取当前行主键值
                 $id = $actions->getKey();
+                $url = url('admin/template');
                 // prepend一个操作
-                $actions->prepend('<a href="template/'.$id.'/editOnLine"><i class="fa fa-paper-plane"></i> 编辑</a>');
+                $actions->prepend('<a href="template/'.$id.'/editOnLine"><i class="feather icon-edit-1"></i> 编辑</a>');
+                $actions->prepend('<a data-url='.$url.'/'.$id.'/delete data-message="ID-'.$id.'的模板文件" data-action="delete" data-redirect='.$url.' style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>');
             });
             // 禁用详情按钮
             $grid->disableViewButton();
@@ -108,7 +115,7 @@ class TemplateController extends  AdminController
             if( !is_null($template) ){
                 $templateArr = $template->toArray();
                 $title = $templateArr['temp_name'];
-                $filePath = public_path('uploads'.DIRECTORY_SEPARATOR).$templateArr['file_path'];
+                $filePath = public_path('uploads'.'/').$templateArr['file_path'];
                 is_file($filePath) and $fileContent = file_get_contents($filePath);
             }
         }
@@ -120,32 +127,80 @@ class TemplateController extends  AdminController
             ->body($form);
     }
 
+    /**
+     * 执行模板文件的写入保存
+     * @param Request $request
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
     public function saveTemplate(Request $request)
     {
         $data = $request->post();
         $form = new Form();
         $id = $request->route('id');
         if( is_numeric($id) ){
-            $template = \App\Models\Template::select(['file_path'])->find($id);
+            $template = \App\Models\Template::select(['id','temp_name','file_path'])->find(intval($id));
             if( !is_null($template) ){
                 $templateArr = $template->toArray();
                 //文件本地上传的路径
-                $fileUploadPath = config('filesystems.disks.admin.root').DIRECTORY_SEPARATOR.config('admin.upload.directory.file');
+                $fileUploadPath = config('filesystems.disks.admin.root').'/'.config('admin.upload.directory.file');
                 if( !is_dir($fileUploadPath) ){
                     mkdir($fileUploadPath,0777,true);
                 }
-                $filePath = public_path('uploads'.DIRECTORY_SEPARATOR).$templateArr['file_path'];
+                $filePath = public_path('uploads'.'/').$templateArr['file_path'];
+               //如果该记录的模板文件路径有问题 则生成一个默认路径的模板文件
+                !is_file($filePath) and $filePath =config('filesystems.disks.admin.root').'/'.config('admin.upload.directory.file').'/'.$templateArr['temp_name'].'.html';
                 $result = file_put_contents($filePath,$data['code']?:'',LOCK_EX);
                 if( $result >= 0 ){
-                    return $form->response()->success('保存成功');
+                    //模板文件写入成功后将新的路径更新至数据库
+                    $template->file_path = config('admin.upload.directory.file').'/'.$templateArr['temp_name'].'.html';
+                    if( $template->save() ){
+                        return $form->response()->success('保存成功')->redirect('template');
+                    }else{
+                        return $form->response()->error('保存失败')->refresh();
+                    }
+
                 }else{
-                    return $form->response()->error('保存失败')->refresh();
+                    return $form->response()->error('文件写入失败')->refresh();
                 }
             }else{
-                return $form->response()->error('数据有误，请稍后再试')->refresh();
+                return $form->response()->warning('系统正忙，请稍后再试')->refresh();
             }
         }else{
             return $form->response()->redirect('template');
+        }
+    }
+
+    /**
+     * 执行删除文章模板
+     * @param Request $request
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
+    public function deleteTemplate(Request $request)
+    {
+       $id = $request->route()->id;
+       $form = new Form();
+        if( is_numeric($id) ){
+            $template = \App\Models\Template::find(intval($id));
+            $templateArr = $template->toArray();
+            //模板文件存放的路径
+            $filePath = config('filesystems.disks.admin.root').'/'.$templateArr['file_path'];
+            if( $template ){
+                if( $template->delete() ){
+                    //记录删除后删除模板文件
+                    if( is_file($filePath) ){
+                        if( !unlink($filePath) ){
+                            return $form->response()->warning('模板文件删除失败')->refresh();
+                        }
+                    }
+                    return $form->response()->success('删除成功')->refresh();
+                }else{
+                    return $form->response()->error('删除失败')->refresh();
+                }
+            }else{
+                return $form->response()->warning('系统正忙，请稍后再试')->refresh();
+            }
+        }else{
+        return $form->response()->redirect('template');
         }
     }
 

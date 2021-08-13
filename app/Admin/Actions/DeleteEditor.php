@@ -66,10 +66,11 @@ class DeleteEditor extends Action
     {
         // 按钮的html
         $html = parent::html();
+        $url = url('admin/editor');
 
         return <<<HTML
 {$html}
-<a data-url="http://admin.cms.com/admin/editor/{$this->editorId}/deleteEditor" data-message="ID-{$this->editorId}" data-action="delete" data-redirect="http://admin.cms.com/admin/editor" style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
+<a data-url={$url}/{$this->editorId}"/deleteEditor" data-message="ID-{$this->editorId}的作者" data-action="delete" data-redirect={$url} style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
 HTML;
     }
 
