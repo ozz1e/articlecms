@@ -4,10 +4,12 @@ namespace App\Admin\Controllers;
 
 use App\Admin\Repositories\Directory;
 use App\Models\Lang;
+use App\Models\Template;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
+use Illuminate\Http\Request;
 
 class DirectoryController extends AdminController
 {
@@ -55,17 +57,27 @@ class DirectoryController extends AdminController
             foreach ($langSearchList as $item) {
                 $langSelectList[$item['id']] = $item['lang_name'];
             }
-            $form->select('lang_id','语言')->required()->options($langSelectList);
+            $form->select('lang_id','语言')->required()->options($langSelectList)->load('template_id','/directory/postList');
             $form->text('directory_name')->placeholder('请输入目录标题，该标题用于页面显示');
-            $form->text('directory_fullpath');
+            $form->text('directory_fullpath','目录路径')->placeholder('请输入目录近路，以/开头');
             $form->text('directory_title');
             $form->text('directory_intro');
-            $form->text('template_id');
+            $form->select('template_id');
             $form->text('template_amp_id');
             $form->text('page_title');
             $form->text('page_description');
             $form->text('page_keywords');
-            $form->text('created_at');
         });
+    }
+
+    protected function detail()
+    {
+        return 'asdasdasd';
+    }
+
+    public function postList(Request $request)
+    {
+        $postId = $request->get('q');
+        return  Template::query()->select('id','temp_name as text')->where('lang_id',$postId)->where('type',1)->get()->toJson();
     }
 }
