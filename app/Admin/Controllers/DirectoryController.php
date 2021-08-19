@@ -2,10 +2,12 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Actions\DeleteDirectory;
 use App\Admin\Repositories\Directory;
 use App\Models\Lang;
 use App\Models\Post;
 use App\Models\Template;
+use App\Services\DirectoryService;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
@@ -65,6 +67,14 @@ class DirectoryController extends AdminController
             });
             // 禁用详情按钮
             $grid->disableViewButton();
+
+            $grid->actions(function (Grid\Displayers\Actions $actions) {
+                //禁用默认的删除按钮
+                $actions->disableDelete();
+                // append一个操作
+                $id = $actions->row->id;
+                $actions->append(new DeleteDirectory($id));
+            });
         });
     }
 
@@ -89,7 +99,7 @@ class DirectoryController extends AdminController
             $form->text('directory_title')->required();
             $form->text('directory_intro')->required();
             $form->select('template_id','POST模板')->default(1)->help('选择语言后筛选出相应的模板信息');
-            $form->select('template_amp_id','AMP模板')->help('同上');
+            $form->select('template_amp_id','AMP模板')->default(1)->help('同上');
             $form->text('page_title','目录首页页面title');
             $form->textarea('page_description','目录首页页面description');
             $form->text('page_keywords','目录首页页面keywords')->help('多个关键词以英文逗号隔开，例如(备份,分区)');
@@ -101,9 +111,27 @@ class DirectoryController extends AdminController
             //去掉继续创建
             $form->disableCreatingCheck();
 
+
         });
     }
 
+    public function deleteDirectory(DirectoryService $service,Request $request)
+    {
+            $id = $request->all('id');
+            try{
+                $result = $service->setId($id)
+                    ->delete();
+
+            }catch (\Exception $exception){
+
+            }
+    }
+
+    /**
+     * 联动语言加载模板
+     * @param Request $request
+     * @return \Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection
+     */
     public function tempList(Request $request)
     {
         $langId = $request->get('q');
