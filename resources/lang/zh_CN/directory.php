@@ -1,7 +1,7 @@
-<?php 
+<?php
 return [
     'labels' => [
-        'Directory' => 'Directory',
+        'Directory' => '目录管理',
         'directory' => 'Directory',
     ],
     'fields' => [

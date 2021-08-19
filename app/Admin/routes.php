@@ -35,6 +35,8 @@ Route::group([
     $router->post('template/{id}/saveTemplate','TemplateController@saveTemplate');
     $router->delete('template/{id}/delete','TemplateController@deleteTemplate');
     //文章目录
+    $router->get('directory/{id}/tempList','DirectoryController@tempList');
+    $router->get('directory/tempList','DirectoryController@tempList');
     $router->resource('directory','DirectoryController');
 
 });

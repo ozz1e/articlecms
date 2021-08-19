@@ -40,10 +40,6 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection password
      * @property Grid\Column|Collection avatar
      * @property Grid\Column|Collection remember_token
-     * @property Grid\Column|Collection post_htmlpath
-     * @property Grid\Column|Collection post_key
-     * @property Grid\Column|Collection post_value
-     * @property Grid\Column|Collection post_html
      * @property Grid\Column|Collection lang_id
      * @property Grid\Column|Collection text_flag
      * @property Grid\Column|Collection text_translate
@@ -72,6 +68,22 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection lang_name
      * @property Grid\Column|Collection email
      * @property Grid\Column|Collection token
+     * @property Grid\Column|Collection keywords
+     * @property Grid\Column|Collection html_fullpath
+     * @property Grid\Column|Collection html_name
+     * @property Grid\Column|Collection summary
+     * @property Grid\Column|Collection contents
+     * @property Grid\Column|Collection post_status
+     * @property Grid\Column|Collection editor_json
+     * @property Grid\Column|Collection related_posts
+     * @property Grid\Column|Collection published_at
+     * @property Grid\Column|Collection structured_data
+     * @property Grid\Column|Collection fb_comment
+     * @property Grid\Column|Collection lightbox
+     * @property Grid\Column|Collection post_htmlpath
+     * @property Grid\Column|Collection post_key
+     * @property Grid\Column|Collection post_value
+     * @property Grid\Column|Collection post_html
      * @property Grid\Column|Collection temp_name
      * @property Grid\Column|Collection file_path
      * @property Grid\Column|Collection email_verified_at
@@ -105,10 +117,6 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection password(string $label = null)
      * @method Grid\Column|Collection avatar(string $label = null)
      * @method Grid\Column|Collection remember_token(string $label = null)
-     * @method Grid\Column|Collection post_htmlpath(string $label = null)
-     * @method Grid\Column|Collection post_key(string $label = null)
-     * @method Grid\Column|Collection post_value(string $label = null)
-     * @method Grid\Column|Collection post_html(string $label = null)
      * @method Grid\Column|Collection lang_id(string $label = null)
      * @method Grid\Column|Collection text_flag(string $label = null)
      * @method Grid\Column|Collection text_translate(string $label = null)
@@ -137,6 +145,22 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection lang_name(string $label = null)
      * @method Grid\Column|Collection email(string $label = null)
      * @method Grid\Column|Collection token(string $label = null)
+     * @method Grid\Column|Collection keywords(string $label = null)
+     * @method Grid\Column|Collection html_fullpath(string $label = null)
+     * @method Grid\Column|Collection html_name(string $label = null)
+     * @method Grid\Column|Collection summary(string $label = null)
+     * @method Grid\Column|Collection contents(string $label = null)
+     * @method Grid\Column|Collection post_status(string $label = null)
+     * @method Grid\Column|Collection editor_json(string $label = null)
+     * @method Grid\Column|Collection related_posts(string $label = null)
+     * @method Grid\Column|Collection published_at(string $label = null)
+     * @method Grid\Column|Collection structured_data(string $label = null)
+     * @method Grid\Column|Collection fb_comment(string $label = null)
+     * @method Grid\Column|Collection lightbox(string $label = null)
+     * @method Grid\Column|Collection post_htmlpath(string $label = null)
+     * @method Grid\Column|Collection post_key(string $label = null)
+     * @method Grid\Column|Collection post_value(string $label = null)
+     * @method Grid\Column|Collection post_html(string $label = null)
      * @method Grid\Column|Collection temp_name(string $label = null)
      * @method Grid\Column|Collection file_path(string $label = null)
      * @method Grid\Column|Collection email_verified_at(string $label = null)
@@ -175,10 +199,6 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection password
      * @property Show\Field|Collection avatar
      * @property Show\Field|Collection remember_token
-     * @property Show\Field|Collection post_htmlpath
-     * @property Show\Field|Collection post_key
-     * @property Show\Field|Collection post_value
-     * @property Show\Field|Collection post_html
      * @property Show\Field|Collection lang_id
      * @property Show\Field|Collection text_flag
      * @property Show\Field|Collection text_translate
@@ -207,6 +227,22 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection lang_name
      * @property Show\Field|Collection email
      * @property Show\Field|Collection token
+     * @property Show\Field|Collection keywords
+     * @property Show\Field|Collection html_fullpath
+     * @property Show\Field|Collection html_name
+     * @property Show\Field|Collection summary
+     * @property Show\Field|Collection contents
+     * @property Show\Field|Collection post_status
+     * @property Show\Field|Collection editor_json
+     * @property Show\Field|Collection related_posts
+     * @property Show\Field|Collection published_at
+     * @property Show\Field|Collection structured_data
+     * @property Show\Field|Collection fb_comment
+     * @property Show\Field|Collection lightbox
+     * @property Show\Field|Collection post_htmlpath
+     * @property Show\Field|Collection post_key
+     * @property Show\Field|Collection post_value
+     * @property Show\Field|Collection post_html
      * @property Show\Field|Collection temp_name
      * @property Show\Field|Collection file_path
      * @property Show\Field|Collection email_verified_at
@@ -240,10 +276,6 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection password(string $label = null)
      * @method Show\Field|Collection avatar(string $label = null)
      * @method Show\Field|Collection remember_token(string $label = null)
-     * @method Show\Field|Collection post_htmlpath(string $label = null)
-     * @method Show\Field|Collection post_key(string $label = null)
-     * @method Show\Field|Collection post_value(string $label = null)
-     * @method Show\Field|Collection post_html(string $label = null)
      * @method Show\Field|Collection lang_id(string $label = null)
      * @method Show\Field|Collection text_flag(string $label = null)
      * @method Show\Field|Collection text_translate(string $label = null)
@@ -272,6 +304,22 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection lang_name(string $label = null)
      * @method Show\Field|Collection email(string $label = null)
      * @method Show\Field|Collection token(string $label = null)
+     * @method Show\Field|Collection keywords(string $label = null)
+     * @method Show\Field|Collection html_fullpath(string $label = null)
+     * @method Show\Field|Collection html_name(string $label = null)
+     * @method Show\Field|Collection summary(string $label = null)
+     * @method Show\Field|Collection contents(string $label = null)
+     * @method Show\Field|Collection post_status(string $label = null)
+     * @method Show\Field|Collection editor_json(string $label = null)
+     * @method Show\Field|Collection related_posts(string $label = null)
+     * @method Show\Field|Collection published_at(string $label = null)
+     * @method Show\Field|Collection structured_data(string $label = null)
+     * @method Show\Field|Collection fb_comment(string $label = null)
+     * @method Show\Field|Collection lightbox(string $label = null)
+     * @method Show\Field|Collection post_htmlpath(string $label = null)
+     * @method Show\Field|Collection post_key(string $label = null)
+     * @method Show\Field|Collection post_value(string $label = null)
+     * @method Show\Field|Collection post_html(string $label = null)
      * @method Show\Field|Collection temp_name(string $label = null)
      * @method Show\Field|Collection file_path(string $label = null)
      * @method Show\Field|Collection email_verified_at(string $label = null)

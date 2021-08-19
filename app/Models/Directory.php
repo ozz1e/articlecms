@@ -12,6 +12,8 @@ class Directory extends Model
 
     protected $table = 'directory';
 
+    protected $dateFormat = 'U';
+
     public $timestamps = true;
 
     protected $fillable = ['domain','lang_id','directory_name','directory_fullpath','directory_title','directory_intro','directory_intro','template_amp_id','page_title','page_description','page_keywords'];
@@ -29,5 +31,10 @@ class Directory extends Model
     public function ampTemp()
     {
         return $this->hasOne(Template::class,'id','template_amp_id');
+    }
+
+    public function articleNum()
+    {
+        return $this->hasMany(Post::class,'directory_fullpath','directory_fullpath')->select('directory_fullpath');
     }
 }
