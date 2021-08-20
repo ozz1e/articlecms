@@ -2,12 +2,14 @@
 
 namespace App\Admin\Actions;
 
+use App\Models\Directory;
 use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Actions\Response;
 use Dcat\Admin\Traits\HasPermissions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use phpDocumentor\Reflection\Types\False_;
 
 class DeleteDirectory extends Action
 {
@@ -19,20 +21,6 @@ class DeleteDirectory extends Action
         parent::__construct();
         $this->directoryId = $id;
     }
-
-    /**
-     * Handle the action request.
-     *
-     * @param Request $request
-     *
-     * @return Response
-     */
-//    public function handle(Request $request)
-//    {
-//        // dump($this->getKey());
-//
-//        return $this->response()->success('Processed successfully.')->redirect('/');
-//    }
 
     /**
      * @return string|array|void
@@ -61,19 +49,12 @@ class DeleteDirectory extends Action
     {
         // 按钮的html
         $html = parent::html();
-        $url = url('admin/directory');
+        $url = url('admin/directory/');
 
         return <<<HTML
 {$html}
-<a data-url={$url}/{$this->directoryId}"/deleteDirectory" data-message="ID-{$this->directoryId}的目录信息，注意：目录下的文件不会删除" data-action="delete" data-redirect={$url} style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
+<a data-url={$url}/{$this->directoryId} data-message="ID-{$this->directoryId}的目录信息，注意：目录下的文件不会删除" data-action="delete" data-redirect={$url} style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
 HTML;
     }
 
-    /**
-     * @return array
-     */
-//    protected function parameters()
-//    {
-//        return [];
-//    }
 }

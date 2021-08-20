@@ -5,7 +5,7 @@ return [
         'directory' => 'Directory',
     ],
     'fields' => [
-        'domain' => 'domain',
+        'domain' => '域名',
         'lang_id' => '语言名称',
         'directory_name' => '目录名称',
         'directory_fullpath' => 'directory_fullpath',

@@ -2,6 +2,7 @@
 /public/hot
 /public/storage
 /public/uploads
+/public/.ckfinder/logs
 /storage/*.key
 /vendor
 .env

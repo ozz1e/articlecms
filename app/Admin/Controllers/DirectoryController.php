@@ -4,6 +4,7 @@ namespace App\Admin\Controllers;
 
 use App\Admin\Actions\DeleteDirectory;
 use App\Admin\Repositories\Directory;
+use App\Http\Requests\DirectoryRequest;
 use App\Models\Lang;
 use App\Models\Post;
 use App\Models\Template;
@@ -15,6 +16,8 @@ use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Widgets\Modal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use PHPUnit\Exception;
 
 class DirectoryController extends AdminController
 {
@@ -104,6 +107,17 @@ class DirectoryController extends AdminController
             $form->textarea('page_description','目录首页页面description');
             $form->text('page_keywords','目录首页页面keywords')->help('多个关键词以英文逗号隔开，例如(备份,分区)');
 
+            $dirId = $form->model()->id;
+
+            if ($form->isCreating()) {
+                $form->action('directory/createDirectory');
+            }
+
+            if ($form->isEditing()) {
+                $form->hidden('id')->value($dirId);
+                $form->action('directory/'.$dirId.'/updateDirectory');
+            }
+
             //去掉底部查看按钮
             $form->disableViewCheck();
             //去掉继续编辑
@@ -111,20 +125,67 @@ class DirectoryController extends AdminController
             //去掉继续创建
             $form->disableCreatingCheck();
 
-
+            $form->tools(function (Form\Tools $tools) {
+                $tools->disableView();
+            });
         });
     }
 
-    public function deleteDirectory(DirectoryService $service,Request $request)
+    public function includeDirectory(DirectoryService $service,Request $request)
     {
-            $id = $request->all('id');
+            $dir = $request->all('dir');
+            if( empty($dir) ){
+                return false;
+            }
             try{
-                $result = $service->setId($id)
-                    ->delete();
+                $result = $service->setDir($dir)
+                    ->includeHtmlFiles();
 
             }catch (\Exception $exception){
 
             }
+    }
+
+    /**
+     * 执行创建目录
+     * @param DirectoryRequest $request
+     * @param DirectoryService $service
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
+    public function createDirectory(DirectoryRequest $request,DirectoryService $service)
+    {
+        $data = $request->all();
+        $form = new Form();
+        try{
+            $result = $service->setDomain($data['domain'])
+                ->setLangId($data['lang_id'])
+                ->setDirectoryName($data['directory_name'])
+                ->setDirectoryTitle($data['directory_title'])
+                ->setDirectoryFullPath($data['directory_fullpath'])
+                ->setDirectoryIntro($data['directory_intro'])
+                ->setTemplateId($data['template_id'])
+                ->setTemplateAmpId($data['template_amp_id'])
+                ->setPageTitle($data['page_title'])
+                ->setPageDesc($data['page_description'])
+                ->setPageKeywords($data['page_keywords'])
+                ->create();
+            if( $result ){
+                return $form->response()->success('添加成功')->redirect('directory');
+            }else{
+                return $form->response()->warning('目录创建失败，请检查路径或者目录权限');
+            }
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('创建失败');
+        }
+
+    }
+
+    public function updateDirectory(DirectoryRequest $request,DirectoryService $service)
+    {
+        $data = $request->all();
+        dd($data);
+        $form = new Form();
     }
 
     /**

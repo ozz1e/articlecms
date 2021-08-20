@@ -38,5 +38,7 @@ Route::group([
     $router->get('directory/{id}/tempList','DirectoryController@tempList');
     $router->get('directory/tempList','DirectoryController@tempList');
     $router->resource('directory','DirectoryController');
+    $router->post('directory/createDirectory','DirectoryController@createDirectory');
+    $router->put('directory/{id}/updateDirectory','DirectoryController@updateDirectory');
 
 });
