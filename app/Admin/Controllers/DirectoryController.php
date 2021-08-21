@@ -3,6 +3,7 @@
 namespace App\Admin\Controllers;
 
 use App\Admin\Actions\DeleteDirectory;
+use App\Admin\Actions\IncludeDirectory;
 use App\Admin\Repositories\Directory;
 use App\Http\Requests\DirectoryRequest;
 use App\Models\Lang;
@@ -74,9 +75,10 @@ class DirectoryController extends AdminController
             $grid->actions(function (Grid\Displayers\Actions $actions) {
                 //禁用默认的删除按钮
                 $actions->disableDelete();
-                // append一个操作
+
                 $id = $actions->row->id;
                 $actions->append(new DeleteDirectory($id));
+                $actions->append(new IncludeDirectory($id));
             });
         });
     }
@@ -98,7 +100,7 @@ class DirectoryController extends AdminController
             }
             $form->select('lang_id','语言')->required()->required()->options($langSelectList)->loads(['template_id','template_amp_id'],['/directory/tempList?t=1','/directory/tempList?t=2']);
             $form->text('directory_name')->required()->placeholder('请输入目录标题，该标题用于页面显示');
-            $form->text('directory_fullpath','目录路径')->required()->placeholder('请输入目录近路，以/开头');
+            $form->text('directory_fullpath','目录路径')->required()->placeholder('请输入目录近路，以/开头')->help('修改目录路径只能在同一目录下进行，例如/a→/b,不能/a→/b/c');
             $form->text('directory_title')->required();
             $form->text('directory_intro')->required();
             $form->select('template_id','POST模板')->default(1)->help('选择语言后筛选出相应的模板信息');
@@ -184,8 +186,30 @@ class DirectoryController extends AdminController
     public function updateDirectory(DirectoryRequest $request,DirectoryService $service)
     {
         $data = $request->all();
-        dd($data);
         $form = new Form();
+        try{
+            $result = $service->setId($data['id'])
+                ->setDomain($data['domain'])
+                ->setLangId($data['lang_id'])
+                ->setDirectoryName($data['directory_name'])
+                ->setDirectoryTitle($data['directory_title'])
+                ->setDirectoryFullPath($data['directory_fullpath'])
+                ->setDirectoryIntro($data['directory_intro'])
+                ->setTemplateId($data['template_id'])
+                ->setTemplateAmpId($data['template_amp_id'])
+                ->setPageTitle($data['page_title'])
+                ->setPageDesc($data['page_description'])
+                ->setPageKeywords($data['page_keywords'])
+                ->update();
+            if( $result ){
+                return $form->response()->success('修改成功')->redirect('directory');
+            }else{
+                return $form->response()->error('修改失败');
+            }
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('修改失败');
+        }
     }
 
     /**

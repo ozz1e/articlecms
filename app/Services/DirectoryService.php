@@ -5,9 +5,15 @@ namespace App\Services;
 
 
 use App\Models\Directory;
+use Illuminate\Support\Facades\DB;
 
 class DirectoryService
 {
+    /**
+     * 目录id
+     * @var int
+     */
+    protected $id;
     /**
      * 域名
      * @var string
@@ -63,6 +69,12 @@ class DirectoryService
      * @var string
      */
     protected $pageKeywords;
+
+    public function setId( $id = 1 )
+    {
+        $this->id = $id;
+        return $this;
+    }
 
     public function setDomain( $domain = '' )
     {
@@ -149,6 +161,51 @@ class DirectoryService
         if( !is_dir( $dirPath ) ){
             return mkdir($dirPath,0777,true);
         }
+        return true;
+
+    }
+
+    public function update()
+    {
+        DB::beginTransaction();
+
+        $dir = Directory::find(intval($this->id));
+        if( !$dir ){
+            DB::rollBack();
+            return false;
+        }
+        $oldDir = $dir->directory_fullpath;
+
+        $dir->domain = $this->domain;
+        $dir->lang_id = $this->langId;
+        $dir->directory_name = $this->directoryName;
+        $dir->directory_fullpath = $this->directoryFullPath;
+        $dir->directory_title = $this->directoryTitle;
+        $dir->directory_intro = $this->directoryIntro;
+        $dir->template_id = $this->templateId;
+        $dir->template_amp_id = $this->templateAmpId;
+        $dir->page_title = $this->pageTitle;
+        $dir->page_description = $this->pageDesc;
+        $dir->page_keywords = $this->pageKeywords;
+        if( !$dir->save() ){
+            DB::rollBack();
+            return false;
+        }
+        $oldDirPath = base_path('../').$oldDir;
+        $newDirPath = base_path('../').$this->directoryFullPath;
+        //如果原目录路径不存在就直接创建一个目录 否则修改目录名称
+        if( is_dir($oldDirPath) ){
+            if( !rename($oldDirPath,$newDirPath) ){
+                DB::rollBack();
+                return false;
+            }
+        }else{
+            if( !mkdir($newDirPath,0777,true) ){
+                DB::rollBack();
+                return false;
+            }
+        }
+        DB::commit();
         return true;
 
     }
