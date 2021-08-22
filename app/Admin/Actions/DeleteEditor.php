@@ -70,7 +70,7 @@ class DeleteEditor extends Action
 
         return <<<HTML
 {$html}
-<a data-url={$url}/{$this->editorId}"/deleteEditor" data-message="ID-{$this->editorId}的作者" data-action="delete" data-redirect={$url} style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
+<a data-url={$url}/{$this->editorId}/deleteEditor data-message="ID-{$this->editorId}的作者" data-action="delete" data-redirect={$url} style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
 HTML;
     }
 

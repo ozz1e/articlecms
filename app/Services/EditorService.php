@@ -11,18 +11,46 @@ use Illuminate\Support\Facades\Log;
 
 class EditorService
 {
-    //作者id
-    private $editorId;
-    //作者名称
-    private $editorName;
-    //语言id
-    private $langId;
-    //作者简介
-    private $editorIntro;
-    //作者头像
-    private $editorAvatar;
-    //作者属性
-    private $editorAttr;
+    /**
+     * 作者id
+     * @var int
+     */
+    protected $editorId;
+    /**
+     * 作者名称
+     * @var string
+     */
+    protected $editorName;
+    /**
+     * 语言id
+     * @var int
+     */
+    protected $langId;
+    /**
+     * 作者简介
+     * @var string
+     */
+    protected $editorIntro;
+    /**
+     * 作者头像
+     * @var string
+     */
+    protected $editorAvatar;
+    /**
+     * 作者属性
+     * @var array
+     */
+    protected $editorAttr;
+    /**
+     * 跟踪文件代码
+     * @var string
+     */
+    protected $gaFileCode;
+    /**
+     * 作者跟踪文件目录
+     * @var string
+     */
+    protected $gaFileDir = '/assets/js/team/';
 
     public function setEditorId($id = 1)
     {
@@ -59,6 +87,11 @@ class EditorService
         $this->editorAttr = $attr;
         return $this;
     }
+    public function setGaCode( $code = '' )
+    {
+        $this->gaFileCode = $code;
+        return $this;
+    }
 
     /**
      * 执行创建作者
@@ -75,6 +108,9 @@ class EditorService
             'editor_intro'=>$this->editorIntro,
             'editor_avatar'=>$this->editorAvatar
         ]);
+
+        //创建作者的跟踪文件
+        $this->createOrEditGaFile();
 
         $attrArr = $this->editorAttr;
         //如果提交数据包含作者属性则在作者属性表插入对应的数据
@@ -103,7 +139,8 @@ class EditorService
     {
         DB::beginTransaction();
 
-        $editor = Editor::find(intval($this->editorId));
+        $editor = Editor::find($this->editorId);
+        $oldEditName = $editor->editor_name;
         if( !$editor ){
             Log::info('未找到ID为'.$this->editorId.'的作者信息');
             return false;
@@ -117,8 +154,16 @@ class EditorService
             return false;
         }
 
+        //创建或修改追踪文件
+        $this->createOrEditGaFile();
+        //如果修改作者名称则删除原来的追踪文件
+        if( $oldEditName != $this->editorName ){
+            $isModifiedEditorName = true;
+            $oldGaFilePath = base_path('../').$this->gaFileDir.$oldEditName.'.js';
+            is_file($oldGaFilePath) and unlink($oldGaFilePath);
+        }
+
         if( !is_null($this->editorAttr) ){
-//            $orginAttr = EditorAttr::where('editor_id','=',$this->editorId)->get()->toArray();
             $attrArr = array_values($this->editorAttr);
             //_remove_为1的表示前端已删除改键值对
             foreach ($attrArr as $item) {
@@ -136,6 +181,10 @@ class EditorService
                     }
                 }else{ //修改属性
                     $attrInfo = EditorAttr::findOrFail($item['id']);
+                    //如果修改作者名称则强制修改其ga_code_url属性
+                    if( isset($isModifiedEditorName) ){
+                        $item['key'] == 'ga_code_url' and $item['value'] = $this->gaFileDir.$this->editorName.'.js';
+                    }
                     $attrInfo->key = $item['key'];
                     $attrInfo->value = $item['value'];
                     if( !$attrInfo->save() ){
@@ -155,7 +204,7 @@ class EditorService
     {
         DB::beginTransaction();
 
-        $editor = Editor::find(intval($this->editorId));
+        $editor = Editor::find($this->editorId);
         $avatarFilePath = public_path('uploads').DIRECTORY_SEPARATOR.$editor->editor_avatar;
 
         if( !$editor ){
@@ -175,8 +224,28 @@ class EditorService
         if( is_file($avatarFilePath) ){
             unlink($avatarFilePath);
         }
+        //删除作者的追踪文件
+        $gaFilePath = base_path('../').$this->gaFileDir.$editor->editor_name.'.js';
+        is_file($gaFilePath) and unlink($gaFilePath);
+
         DB::commit();
         return true;
+    }
+
+    public function createOrEditGaFile()
+    {
+        $gaFullDir = base_path('../').$this->gaFileDir;
+        if ( !is_dir($gaFullDir) ){
+            if( !mkdir($gaFullDir,0777,true) ){
+                DB::rollBack();
+                return false;
+            }
+        }
+        $editorGaFilePath = $gaFullDir.$this->editorName.'.js';
+        if( !file_put_contents($editorGaFilePath,$this->gaFileCode,LOCK_EX) ){
+            DB::rollBack();
+            return false;
+        }
     }
 
 }

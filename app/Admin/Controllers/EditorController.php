@@ -6,6 +6,7 @@ namespace App\Admin\Controllers;
 use App\Admin\Actions\DeleteEditor;
 use App\Admin\Repositories\Editor;
 use App\Http\Requests\EditorRequest;
+use App\Models\EditorAttr;
 use App\Models\Lang;
 use App\Services\EditorService;
 use Dcat\Admin\Form;
@@ -76,7 +77,8 @@ class EditorController extends  AdminController
     protected function form()
     {
         return Form::make(new Editor(), function (Form $form) {
-            $form->ckeditor('content');
+//                $form->ckeditor('content');
+                $editorId = $form->model()->id;
                 $form->text('editor_name')->required()->rules('regex:/^[a-zA-Z\d]+$/|unique:editor,editor_name',[
                     'regex'=>'作者名称必须为字母',
                     'unique'=>'作者名称已存在'
@@ -89,6 +91,15 @@ class EditorController extends  AdminController
                 $form->select('lang_id','语言')->required()->options($langSelectList);
                 $form->textarea('editor_intro','简介');
                 $form->image('editor_avatar')->required()->url('editor/uploadAvatar');
+                $gaCodeUrl = EditorAttr::query()->where('editor_id',$editorId)->where('key','ga_code_url')->pluck('value')->toArray();
+
+                $gaFileContent = '';
+                if( !empty($gaCodeUrl) ){
+                    $gaFilePath = base_path('../').$gaCodeUrl[0];
+                    is_file($gaFilePath) and $gaFileContent = file_get_contents($gaFilePath);
+                }
+
+                $form->php('code','追踪文件')->required()->value($gaFileContent)->help('文件位置/assets/js/team/作者名称.js');
                 $form->action('editor/createEditor');
                 //去掉底部查看按钮
                 $form->disableViewCheck();
@@ -97,7 +108,7 @@ class EditorController extends  AdminController
                 //去掉继续创建
                 $form->disableCreatingCheck();
 
-                $editorId = $form->model()->id;
+
 
             if ($form->isEditing()) {
                 $form->model()->attr->toArray();
@@ -115,7 +126,9 @@ class EditorController extends  AdminController
                 $table->hidden('id');
             });
 
-
+            $form->tools(function (Form\Tools $tools) {
+                $tools->disableView();
+            });
         });
     }
 
@@ -134,7 +147,8 @@ class EditorController extends  AdminController
             $editor = $service->setName($data['editor_name'])
                 ->setLangId($data['lang_id'])
                 ->setIntro($data['editor_intro'])
-                ->setAvatar($data['editor_avatar']);
+                ->setAvatar($data['editor_avatar'])
+                ->setGaCode($data['code']);
 
             //请求数据中有作者属性则增加添加属性操作
             if( array_key_exists('attr',$data)){
@@ -184,7 +198,8 @@ class EditorController extends  AdminController
                 ->setName($data['editor_name'])
                 ->setLangId($data['lang_id'])
                 ->setIntro($data['editor_intro'])
-                ->setAvatar($data['editor_avatar']);
+                ->setAvatar($data['editor_avatar'])
+                ->setGaCode($data['code']);
 
             //请求数据中有作者属性则增加添加属性操作
             if( array_key_exists('attr',$data)){
