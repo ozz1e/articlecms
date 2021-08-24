@@ -213,7 +213,9 @@ class DirectoryService
     public function includeHtmlFiles()
     {
         //规定文件夹都是在项目目录外
-        $realDir = base_path('../').$this->dir;
+        $realDir = base_path('../').$this->directoryFullPath;
+
+        return true;
     }
 
 }

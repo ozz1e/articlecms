@@ -77,8 +77,9 @@ class DirectoryController extends AdminController
                 $actions->disableDelete();
 
                 $id = $actions->row->id;
-                $actions->append(new DeleteDirectory($id));
-                $actions->append(new IncludeDirectory($id));
+                $path = $actions->row->directory_fullpath;
+                $actions->append(new DeleteDirectory($path));
+                $actions->append(new IncludeDirectory($path));
             });
         });
     }
@@ -135,17 +136,18 @@ class DirectoryController extends AdminController
 
     public function includeDirectory(DirectoryService $service,Request $request)
     {
-            $dir = $request->all('dir');
-            if( empty($dir) ){
-                return false;
-            }
-            try{
-                $result = $service->setDir($dir)
-                    ->includeHtmlFiles();
+        $dir = $request->all('dir');
+        $form = new Form();
+        if( empty($dir) ){
+            return $form->response()->warning('请确认目录路径');
+        }
+        try{
+            $result = $service->setDirectoryFullPath($dir)
+                ->includeHtmlFiles();
 
-            }catch (\Exception $exception){
+        }catch (\Exception $exception){
 
-            }
+        }
     }
 
     /**

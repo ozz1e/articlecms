@@ -40,5 +40,5 @@ Route::group([
     $router->resource('directory','DirectoryController');
     $router->post('directory/createDirectory','DirectoryController@createDirectory');
     $router->put('directory/{id}/updateDirectory','DirectoryController@updateDirectory');
-
+    $router->post('directory/includeDirectory','DirectoryController@includeDirectory');
 });
