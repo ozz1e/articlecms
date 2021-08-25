@@ -13,7 +13,6 @@ class IncludeDirectory extends Action
 {
     protected $directoryPath;
 
-    protected $modalId = 'show-current-user';
 
     public function __construct($path = null)
     {
@@ -66,11 +65,11 @@ JS;
     protected function script()
     {
         return <<<JS
-console.log($('.collect-article').length);
 $(".collect-article").on('click',function (){
-    // console.log($(this).data('path'));
+    console.log($(this).data("path"));
     $.ajax({
     type:'post',
+    data:{dir:$(this).data("path")},
     url:'directory/includeDirectory',
     success:function (res){
 

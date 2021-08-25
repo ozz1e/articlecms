@@ -29,7 +29,6 @@ class DirectoryController extends AdminController
      */
     protected function grid()
     {
-        dd(pathinfo("avatar2.jpg"));
         return Grid::make(\App\Models\Directory::with(['lang','postTemp','ampTemp']), function (Grid $grid) {
             $grid->withBorder();
             $grid->addTableClass(['table-text-center']);
@@ -79,7 +78,7 @@ class DirectoryController extends AdminController
 
                 $id = $actions->row->id;
                 $path = $actions->row->directory_fullpath;
-                $actions->append(new DeleteDirectory($path));
+                $actions->append(new DeleteDirectory($id));
                 $actions->append(new IncludeDirectory($path));
             });
         });
@@ -137,17 +136,19 @@ class DirectoryController extends AdminController
 
     public function includeDirectory(DirectoryService $service,Request $request)
     {
-        $dir = $request->all('dir');
+        $requestData = $request->all('dir');
         $form = new Form();
-        if( empty($dir) ){
+        if( empty(base_path('../').$requestData['dir']) ){
             return $form->response()->warning('请确认目录路径');
         }
         try{
-            $result = $service->setDirectoryFullPath($dir)
+            $result = $service->setDirectoryFullPath($requestData['dir'])
                 ->includeHtmlFiles();
 
-        }catch (\Exception $exception){
 
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('采集失败');
         }
     }
 

@@ -220,10 +220,11 @@ class DirectoryService
         $htmlInDIr = [];
         foreach ($allFileInDir as $item) {
             //筛选出不含'--tmp'的html文件
-            if( pathinfo($item)['extension'] == 'html' && stripos($item,'--tmp') ){
+            if( pathinfo($item)['extension'] == 'html' && !stripos($item,'--tmp') ){
                 $htmlInDIr[] = $item;
             }
         }
+        dd($htmlInDIr);
 
         return true;
     }
