@@ -29,6 +29,7 @@ class DirectoryController extends AdminController
      */
     protected function grid()
     {
+        dd(pathinfo("avatar2.jpg"));
         return Grid::make(\App\Models\Directory::with(['lang','postTemp','ampTemp']), function (Grid $grid) {
             $grid->withBorder();
             $grid->addTableClass(['table-text-center']);

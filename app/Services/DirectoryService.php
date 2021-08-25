@@ -212,8 +212,18 @@ class DirectoryService
 
     public function includeHtmlFiles()
     {
-        //规定文件夹都是在项目目录外
         $realDir = base_path('../').$this->directoryFullPath;
+        if( !is_dir($realDir) ){
+            return false;
+        }
+        $allFileInDir = getDir($realDir);
+        $htmlInDIr = [];
+        foreach ($allFileInDir as $item) {
+            //筛选出不含'--tmp'的html文件
+            if( pathinfo($item)['extension'] == 'html' && stripos($item,'--tmp') ){
+                $htmlInDIr[] = $item;
+            }
+        }
 
         return true;
     }
