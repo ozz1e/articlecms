@@ -11,13 +11,13 @@ use Illuminate\Http\Request;
 
 class IncludeDirectory extends Action
 {
-    protected $directoryPath;
+    protected $directoryInfo;
 
 
-    public function __construct($path = null)
+    public function __construct($info = null)
     {
         parent::__construct();
-        $this->directoryPath = $path;
+        $this->directoryInfo = $info;
     }
 
 
@@ -66,13 +66,20 @@ JS;
     {
         return <<<JS
 $(".collect-article").on('click',function (){
-    console.log($(this).data("path"));
     $.ajax({
     type:'post',
-    data:{dir:$(this).data("path")},
+    data:{dir:$(this).data('info')},
     url:'directory/includeDirectory',
+    beforeSend:function (){
+      Dcat.loading();
+    },
+    complete:function (){
+      Dcat.loading(false);
+    },
     success:function (res){
-
+        if( res.status === 'error' ){
+            Dcat.error(res.msg);
+        }
     }
 
     })
@@ -88,11 +95,18 @@ JS;
     {
         // 按钮的html
         $html = parent::html();
-        $url = url('admin/directory/');
+        $dirInfo = [
+            'template_id'=>$this->directoryInfo['template_id'],
+            'template_amp_id'=>$this->directoryInfo['template_amp_id'],
+            'directory_fullpath'=>$this->directoryInfo['directory_fullpath'],
+            'directory_title'=>$this->directoryInfo['directory_title'],
+            'lang_id'=>$this->directoryInfo['lang_id'],
+        ];
+        $info = json_encode($dirInfo);
 
         return <<<HTML
 {$html}
-<a class="collect-article" data-path="{$this->directoryPath}" style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-command"></i> 采集 &nbsp;&nbsp;</a>
+<a class="collect-article" data-info='{$info}' style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-command"></i> 采集 &nbsp;&nbsp;</a>
 HTML;
 
     }

@@ -5,7 +5,9 @@ namespace App\Services;
 
 
 use App\Models\Directory;
+use App\Models\Post;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 class DirectoryService
 {
@@ -69,6 +71,11 @@ class DirectoryService
      * @var string
      */
     protected $pageKeywords;
+    /**
+     * 目录信息
+     * @var array
+     */
+    protected $dirInfo;
 
     public function setId( $id = 1 )
     {
@@ -138,6 +145,12 @@ class DirectoryService
     public function setPageKeywords( $pageWords = '' )
     {
         $this->pageKeywords = '';
+        return $this;
+    }
+
+    public function setDirInfo( $info = [] )
+    {
+        $this->dirInfo = $info;
         return $this;
     }
 
@@ -212,19 +225,21 @@ class DirectoryService
 
     public function includeHtmlFiles()
     {
-        $realDir = base_path('../').$this->directoryFullPath;
+        $dirInfo = $this->dirInfo;
+        $realDir = base_path('../').$dirInfo['directory_fullpath'];
         if( !is_dir($realDir) ){
-            return false;
+            return ['status' => 'error','code'=>Response::HTTP_PRECONDITION_FAILED,'msg'=>'请确认目录路径'];
         }
         $allFileInDir = getDir($realDir);
-        $htmlInDIr = [];
+        $htmlInDir = [];
         foreach ($allFileInDir as $item) {
-            //筛选出不含'--tmp'的html文件
-            if( pathinfo($item)['extension'] == 'html' && !stripos($item,'--tmp') ){
-                $htmlInDIr[] = $item;
+            //筛选出不含'--tmp'和'amp'的html文件
+            if( pathinfo($item)['extension'] == 'html' && !stripos($item,'--tmp') && !stripos($item,'amp')){
+                $htmlInDir[] = $item;
             }
         }
-        dd($htmlInDIr);
+        $htmlInDb = Post::query()->where('directory_fullpath',$dirInfo['directory_fullpath'])->pluck('html_name')->toArray();
+        dd($htmlInDb);
 
         return true;
     }

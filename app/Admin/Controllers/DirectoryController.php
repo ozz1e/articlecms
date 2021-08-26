@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PHPUnit\Exception;
+use Symfony\Component\HttpFoundation\Response;
 
 class DirectoryController extends AdminController
 {
@@ -77,9 +78,9 @@ class DirectoryController extends AdminController
                 $actions->disableDelete();
 
                 $id = $actions->row->id;
-                $path = $actions->row->directory_fullpath;
+                $dirInfo = $actions->row->toArray();
                 $actions->append(new DeleteDirectory($id));
-                $actions->append(new IncludeDirectory($path));
+                $actions->append(new IncludeDirectory($dirInfo));
             });
         });
     }
@@ -136,14 +137,16 @@ class DirectoryController extends AdminController
 
     public function includeDirectory(DirectoryService $service,Request $request)
     {
+        //请求数据为数组 ['template_id'=>'','template_amp_id'=>'','directory_fullpath'=>'','directory_title'=>'','lang_id'=>'']
         $requestData = $request->all('dir');
         $form = new Form();
-        if( empty(base_path('../').$requestData['dir']) ){
-            return $form->response()->warning('请确认目录路径');
-        }
+//        if( empty(base_path('../').$requestData['dir']['directory_fullpath']) ){
+//            return response()->json(['state' => 'error','code'=>Response::HTTP_PRECONDITION_FAILED,'msg'=>'请确认目录路径']);
+//        }
         try{
-            $result = $service->setDirectoryFullPath($requestData['dir'])
+            $result = $service->setDirInfo($requestData['dir'])
                 ->includeHtmlFiles();
+            return response()->json($result);
 
 
         }catch (\Exception $exception){
