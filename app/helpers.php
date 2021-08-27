@@ -1,6 +1,7 @@
 <?php
 if (! function_exists('getDir')) {
-    function getDir($path) {
+    function getDir($path)
+    {
         if( !is_dir($path) ){
             return [];
         }
@@ -15,5 +16,12 @@ if (! function_exists('getDir')) {
             }
         }
         return $fileItem;
+    }
+}
+
+if( !function_exists('filterHtml')){
+    function filterHtml( $content = '' )
+    {
+        return htmlentities(trim($content));
     }
 }

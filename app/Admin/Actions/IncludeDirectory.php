@@ -77,7 +77,7 @@ $(".collect-article").on('click',function (){
       Dcat.loading(false);
     },
     success:function (res){
-        if( res.status === 'error' ){
+        if( res.code !== 200 ){
             Dcat.error(res.msg);
         }
     }

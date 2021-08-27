@@ -76,6 +76,10 @@ class DirectoryService
      * @var array
      */
     protected $dirInfo;
+    /**
+     * 文章内容的tag标签
+     */
+    const CONTENT_TAG = '<!--ART_CONTENT-->';
 
     public function setId( $id = 1 )
     {
@@ -239,9 +243,82 @@ class DirectoryService
             }
         }
         $htmlInDb = Post::query()->where('directory_fullpath',$dirInfo['directory_fullpath'])->pluck('html_name')->toArray();
-        dd($htmlInDb);
+        //即将入库的文件
+        $diffFilesArr = array_diff($htmlInDir,$htmlInDb);
+        if( empty($diffFilesArr) ){
+            return ['status' => 'success','code'=>Response::HTTP_ACCEPTED,'msg'=>'没有合适的文件需要采集'];
+        }
+
 
         return true;
     }
+
+    public function transferHtmlToArr( $htmlArr = [] )
+    {
+
+    }
+
+    /**
+     * 匹配html文件中的文章内容并返回
+     * @param string $htmlContent
+     * @return false|string
+     */
+    public function matchHtmlContent( $htmlContent = '' )
+    {
+        $reg = "/".self::CONTENT_TAG."(.*)".self::CONTENT_TAG."/imsU";
+        $result = preg_match($reg, $htmlContent, $matches);
+        if(!$result) {
+            return false;
+        }
+        //Todo
+        //removeH1   removeLazyImage
+        return filterHtml($matches[1]);
+    }
+
+    /**
+     * 匹配html文件中的文章标题并返回
+     * @param string $htmlContent
+     * @return false|string
+     */
+    public function matchHtmlTitle( $htmlContent = '' )
+    {
+        $reg = "/<title>(.*)<\/title>/ismU";
+        $result = preg_match($reg, $htmlContent, $matches);
+        if(!$result) {
+            return false;
+        }
+        return filterHtml($matches[1]);
+    }
+
+    /**
+     * 匹配html文件中的页面描述并返回
+     * @param string $htmlContent
+     * @return false|string
+     */
+    public function matchHtmlDescription( $htmlContent = '' )
+    {
+        $reg = "/<meta\s+name=\"description\"\s+content=\"(.*)\"\s*\/?>/ismU";
+        $result = preg_match($reg, $htmlContent, $matches);
+        if(!$result) {
+            return false;
+        }
+        return filterHtml($matches[1]);
+    }
+
+    /**
+     * 匹配html文件中的关键词并返回
+     * @param string $htmlContent
+     * @return false|string
+     */
+    public function matchHtmlKeywords( $htmlContent = '' )
+    {
+        $reg = "/<meta\s+name=\"keywords\"\s+content=\"(.*)\"\s*\/?>/ismU";
+        $result = preg_match($reg, $htmlContent, $matches);
+        if(!$result) {
+            return false;
+        }
+        return filterHtml($matches[1]);
+    }
+
 
 }
