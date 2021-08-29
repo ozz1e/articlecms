@@ -275,6 +275,7 @@ class DirectoryService
         return filterHtml($matches[1]);
     }
 
+
     /**
      * 匹配html文件中的文章标题并返回
      * @param string $htmlContent
@@ -305,6 +306,36 @@ class DirectoryService
         return filterHtml($matches[1]);
     }
 
+    public function matchHtmlDocument( $htmlContent = '', $type = 1, $node = '' )
+    {
+        $data = [];
+        $dom  = new \DOMDocument();
+        libxml_use_internal_errors( 1 );
+        $dom->loadHTML( $htmlContent );
+
+        switch ( $type ){
+            case 1:
+                $metaDocs = $dom->getElementsByTagName('meta');
+                for ($i = 0; $metaDocs->length;$i++){
+                    if( in_array($metaDocs[$i]->getAttribute('name'),['title','description','keywords']) ){
+                        $data[$metaDocs[$i]->getAttribute('name')] = $metaDocs[$i]->getAttribute('content');
+                        break;
+                    }
+                }
+                break;
+            case 2:
+                //Todo
+                break;
+            case 3:
+                //Todo
+                break;
+            default:
+                break;
+        }
+
+
+    }
+
     /**
      * 匹配html文件中的关键词并返回
      * @param string $htmlContent
@@ -319,6 +350,18 @@ class DirectoryService
         }
         return filterHtml($matches[1]);
     }
+
+    public function matchHtmlSummary(  $htmlContent = ''  )
+    {
+
+    }
+
+    public function matchHtmlRelated(  $htmlContent = '' )
+    {
+
+    }
+
+
 
 
 }
