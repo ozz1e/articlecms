@@ -306,12 +306,13 @@ class DirectoryService
         return filterHtml($matches[1]);
     }
 
-    public function matchHtmlDocument( $htmlContent = '', $type = 1, $node = '' )
+    public function matchHtmlDocument( $htmlContent = '', $type = 1, $queryElement = '', $key = '' )
     {
         $data = [];
         $dom  = new \DOMDocument();
         libxml_use_internal_errors( 1 );
         $dom->loadHTML( $htmlContent );
+        $xpath = new \DOMXpath( $dom );
 
         switch ( $type ){
             case 1:
@@ -324,7 +325,12 @@ class DirectoryService
                 }
                 break;
             case 2:
-                //Todo
+                $queryString = '';
+                $queryDoc = $xpath->query( '//'.$queryElement );
+                foreach ($queryDoc->item(0)->childNodes as $childNode) {
+                    $queryString .= $dom->saveHTML($childNode);
+                }
+                $data[$key] = filterHtml($queryString);
                 break;
             case 3:
                 //Todo
