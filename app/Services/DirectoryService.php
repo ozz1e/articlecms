@@ -306,6 +306,14 @@ class DirectoryService
         return filterHtml($matches[1]);
     }
 
+    /**
+     * 匹配html文件中的各种元素
+     * @param string $htmlContent html文件内容
+     * @param int $type 1:元标签;2:匹配元素内的html内容(包含html标签);3:匹配元素的内容(不包含html标签)
+     * @param string $queryElement 匹配元素
+     * @param string $key 储存于数组的键名
+     * @return array
+     */
     public function matchHtmlDocument( $htmlContent = '', $type = 1, $queryElement = '', $key = '' )
     {
         $data = [];
@@ -333,12 +341,13 @@ class DirectoryService
                 $data[$key] = filterHtml($queryString);
                 break;
             case 3:
-                //Todo
+                $jsonScripts = $xpath->query( '//'.$queryElement  );
+                $data[$key] = $jsonScripts->item(0)->nodeValue;
                 break;
             default:
                 break;
         }
-
+        return $data;
 
     }
 
@@ -355,11 +364,6 @@ class DirectoryService
             return false;
         }
         return filterHtml($matches[1]);
-    }
-
-    public function matchHtmlSummary(  $htmlContent = ''  )
-    {
-
     }
 
     public function matchHtmlRelated(  $htmlContent = '' )
