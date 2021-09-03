@@ -80,6 +80,11 @@ class DirectoryService
      * 文章内容的tag标签
      */
     const CONTENT_TAG = '<!--ART_CONTENT-->';
+    /**
+     * 作者id
+     * @var int
+     */
+    protected $editorId;
 
     public function setId( $id = 1 )
     {
@@ -248,13 +253,97 @@ class DirectoryService
         if( empty($diffFilesArr) ){
             return ['status' => 'success','code'=>Response::HTTP_ACCEPTED,'msg'=>'没有合适的文件需要采集'];
         }
+        $this->editorId = EditorService::randomEditor();
+
+        $postListArr = [];
+        foreach ($diffFilesArr as $item) {
+            $filePath = base_path('../').$this->dirInfo['directory_fullpath'].DIRECTORY_SEPARATOR.$item;
+            if( is_file($filePath) ){
+                $fileContent = file_get_contents($filePath);
+                $postListArr[] = $this->transferHtmlToArr($fileContent);
+            }
+        }
+        dd($postListArr);
 
 
         return true;
     }
 
-    public function transferHtmlToArr( $htmlArr = [] )
+    public function transferHtmlToArr( $htmlContent = '' )
     {
+        //标题
+        $title = $this->matchHtmlDocument($htmlContent,3,'title','title');
+        //元标签数据
+        $metaArr = $this->matchHtmlDocument($htmlContent,1);
+        //结构化数据
+        $structureArr = $this->matchHtmlDocument($htmlContent,3,'script[@type="application/ld+json"]','structured_data');
+        $_structureArr = $structureArr;
+        //根据需求需要包含父节点
+        $structureArr['structured_data'] = filterHtml('<script type="application/ld+json">'.$structureArr['structured_data'].'</script>');
+        //文章内容
+        $contentArr['content'] = $this->matchHtmlContent($htmlContent);
+        //相关文章数据
+        $relatedArr = $this->matchHtmlDocument($htmlContent,2,'dl[@id="am-related-articles"]','related_posts');
+        //根据需求需要包含父节点
+        $relatedArr['related_posts'] = filterHtml('<dl id="am-related-articles">'.$relatedArr['related_posts'].'</dl>');
+
+        //如果采集html文件中包含结构化数据则从其中获得时间信息
+        if( !empty($structureArr) ){
+            $structure = json_decode($_structureArr['structured_data'],true);
+            $timeArr = ['published_at'=>strtotime($structure['datePublished']),'created_at'=>strtotime($structure['dateCreated']),'updated_at'=>strtotime($structure['dateModified'])];
+        }else{
+            $timeArr = ['published_at'=>time(),'created_at'=>time(),'updated_at'=>time()];
+        }
+        //随机产生的作者id
+        $editor['editor_id'] = $this->editorId;
+        //默认editor_json
+        $editorJson['editor_json'] = json_encode(['editor_id'=>$this->editorId,'editor_name'=>'','ga_code_url'=>'','twitter_url'=>'','editor_avatar'=>'']);
+        return array_merge($title,$metaArr,$structureArr,$contentArr,$relatedArr,$timeArr,$editor,$editorJson,$this->dirInfo);
+
+
+    }
+    /**
+     * 匹配html文件中的各种元素
+     * @param string $htmlContent html文件内容
+     * @param int $type 1:元标签;2:匹配元素内的html内容(包含html标签);3:匹配元素的内容(不包含html标签)
+     * @param string $queryElement 匹配元素
+     * @param string $key 储存于数组的键名
+     * @return array
+     */
+    public function matchHtmlDocument( $htmlContent = '', $type = 1, $queryElement = '', $key = '' )
+    {
+        $data = [];
+        $dom  = new \DOMDocument();
+        libxml_use_internal_errors( 1 );
+        $dom->loadHTML( $htmlContent );
+        $xpath = new \DOMXpath( $dom );
+
+        switch ( $type ){
+            case 1:
+                $metaDocs = $dom->getElementsByTagName('meta');
+                for ($i = 0; $metaDocs->length;$i++){
+                    if(  !empty($metaDocs[$i]->getAttribute('name')) && in_array($metaDocs[$i]->getAttribute('name'),['description','keywords'])){
+                        $data[$metaDocs[$i]->getAttribute('name')] = $metaDocs[$i]->getAttribute('content')??'';
+                        break;
+                    }
+                }
+                break;
+            case 2:
+                $queryString = '';
+                $queryDoc = $xpath->query( '//'.$queryElement );
+                foreach ($queryDoc->item(0)->childNodes as $childNode) {
+                    $queryString .= $dom->saveHTML($childNode);
+                }
+                $data[$key] = $queryString??'';
+                break;
+            case 3:
+                $jsonScripts = $xpath->query( '//'.$queryElement  );
+                $data[$key] = $jsonScripts->item(0)->nodeValue??'';
+                break;
+            default:
+                break;
+        }
+        return $data;
 
     }
 
@@ -306,50 +395,7 @@ class DirectoryService
         return filterHtml($matches[1]);
     }
 
-    /**
-     * 匹配html文件中的各种元素
-     * @param string $htmlContent html文件内容
-     * @param int $type 1:元标签;2:匹配元素内的html内容(包含html标签);3:匹配元素的内容(不包含html标签)
-     * @param string $queryElement 匹配元素
-     * @param string $key 储存于数组的键名
-     * @return array
-     */
-    public function matchHtmlDocument( $htmlContent = '', $type = 1, $queryElement = '', $key = '' )
-    {
-        $data = [];
-        $dom  = new \DOMDocument();
-        libxml_use_internal_errors( 1 );
-        $dom->loadHTML( $htmlContent );
-        $xpath = new \DOMXpath( $dom );
 
-        switch ( $type ){
-            case 1:
-                $metaDocs = $dom->getElementsByTagName('meta');
-                for ($i = 0; $metaDocs->length;$i++){
-                    if( in_array($metaDocs[$i]->getAttribute('name'),['title','description','keywords']) ){
-                        $data[$metaDocs[$i]->getAttribute('name')] = $metaDocs[$i]->getAttribute('content');
-                        break;
-                    }
-                }
-                break;
-            case 2:
-                $queryString = '';
-                $queryDoc = $xpath->query( '//'.$queryElement );
-                foreach ($queryDoc->item(0)->childNodes as $childNode) {
-                    $queryString .= $dom->saveHTML($childNode);
-                }
-                $data[$key] = filterHtml($queryString);
-                break;
-            case 3:
-                $jsonScripts = $xpath->query( '//'.$queryElement  );
-                $data[$key] = $jsonScripts->item(0)->nodeValue;
-                break;
-            default:
-                break;
-        }
-        return $data;
-
-    }
 
     /**
      * 匹配html文件中的关键词并返回

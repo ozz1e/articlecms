@@ -221,6 +221,12 @@ class EditorController extends  AdminController
 
     }
 
+    /**
+     * 删除作者
+     * @param Request $request
+     * @param EditorService $service
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
     public function deleteEditor(Request $request,EditorService $service)
     {
         $form = new Form();
@@ -246,6 +252,10 @@ class EditorController extends  AdminController
     }
 
 
+    /**
+     * 上传头像
+     * @return mixed
+     */
     public function uploadAvatar()
     {
         $disk= $this->disk('admin');

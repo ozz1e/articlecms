@@ -200,6 +200,10 @@ class EditorService
         return true;
     }
 
+    /**
+     * 执行删除作者及相关信息
+     * @return bool
+     */
     public function delete()
     {
         DB::beginTransaction();
@@ -232,6 +236,10 @@ class EditorService
         return true;
     }
 
+    /**
+     * 执行创建跟踪文件
+     * @return false
+     */
     public function createOrEditGaFile()
     {
         $gaFullDir = base_path('../').$this->gaFileDir;
@@ -246,6 +254,17 @@ class EditorService
             DB::rollBack();
             return false;
         }
+    }
+
+    /**
+     * 返回一个随机的作者id
+     * @return mixed
+     */
+    public static function randomEditor()
+    {
+        $idsArr = Editor::query()->pluck('id')->all();
+        $randKey = array_rand($idsArr);
+        return $idsArr[$randKey];
     }
 
 }
