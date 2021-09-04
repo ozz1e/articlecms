@@ -256,15 +256,5 @@ class EditorService
         }
     }
 
-    /**
-     * 返回一个随机的作者id
-     * @return mixed
-     */
-    public static function randomEditor()
-    {
-        $idsArr = Editor::query()->pluck('id')->all();
-        $randKey = array_rand($idsArr);
-        return $idsArr[$randKey];
-    }
 
 }

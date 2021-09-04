@@ -80,11 +80,6 @@ class DirectoryService
      * 文章内容的tag标签
      */
     const CONTENT_TAG = '<!--ART_CONTENT-->';
-    /**
-     * 作者id
-     * @var int
-     */
-    protected $editorId;
 
     public function setId( $id = 1 )
     {
@@ -273,29 +268,33 @@ class DirectoryService
     {
         //标题
         $title = $this->matchHtmlDocument($htmlContent,3,'title','title');
+
         //元标签数据
         $metaArr = $this->matchHtmlDocument($htmlContent,1);
+
         //结构化数据
         $structureArr = $this->matchHtmlDocument($htmlContent,3,'script[@type="application/ld+json"]','structured_data');
         $_structureArr = $structureArr;
-        //根据需求需要包含父节点
-        $structureArr['structured_data'] = filterHtml('<script type="application/ld+json">'.$structureArr['structured_data'].'</script>');
-        //文章内容
-        $contentArr['content'] = $this->matchHtmlContent($htmlContent);
-        //相关文章数据
-        $relatedArr = $this->matchHtmlDocument($htmlContent,2,'dl[@id="am-related-articles"]','related_posts');
-        //根据需求需要包含父节点
-        $relatedArr['related_posts'] = filterHtml('<dl id="am-related-articles">'.$relatedArr['related_posts'].'</dl>');
-
-        //如果采集html文件中包含结构化数据则从其中获得时间信息
+        //html文件需要含有结构化数据 没有则提示添加
         if( !empty($structureArr) ){
             $structure = json_decode($_structureArr['structured_data'],true);
             $timeArr = ['published_at'=>strtotime($structure['datePublished']),'created_at'=>strtotime($structure['dateCreated']),'updated_at'=>strtotime($structure['dateModified'])];
         }else{
-            $timeArr = ['published_at'=>time(),'created_at'=>time(),'updated_at'=>time()];
+            return ['code'=>1,'status'=>'failed','msg'=>'请添加结构化数据'];
         }
-        //随机产生的作者id
-        $editor['editor_id'] = $this->editorId;
+        //结构化数据需要包含父节点
+        $structureArr['structured_data'] = filterHtml('<script type="application/ld+json">'.$structureArr['structured_data'].'</script>');
+
+        //文章内容
+        $contentArr['content'] = $this->matchHtmlContent($htmlContent);
+
+        //相关文章数据
+        $relatedArr = $this->matchHtmlDocument($htmlContent,2,'dl[@id="am-related-articles"]','related_posts');
+        //相关文章需要包含父节点
+        $relatedArr['related_posts'] = filterHtml('<dl id="am-related-articles">'.$relatedArr['related_posts'].'</dl>');
+
+
+
         //默认editor_json
         $editorJson['editor_json'] = json_encode(['editor_id'=>$this->editorId,'editor_name'=>'','ga_code_url'=>'','twitter_url'=>'','editor_avatar'=>'']);
         return array_merge($title,$metaArr,$structureArr,$contentArr,$relatedArr,$timeArr,$editor,$editorJson,$this->dirInfo);
@@ -364,60 +363,11 @@ class DirectoryService
         return filterHtml($matches[1]);
     }
 
-
-    /**
-     * 匹配html文件中的文章标题并返回
-     * @param string $htmlContent
-     * @return false|string
-     */
-    public function matchHtmlTitle( $htmlContent = '' )
+    public function matchHtmlGaJs( $htmlContent = '' )
     {
-        $reg = "/<title>(.*)<\/title>/ismU";
+        $reg = '/<script.*src=\".*\/team\/(.*).js\"><\/script>/ismU';
         $result = preg_match($reg, $htmlContent, $matches);
-        if(!$result) {
-            return false;
-        }
-        return filterHtml($matches[1]);
     }
-
-    /**
-     * 匹配html文件中的页面描述并返回
-     * @param string $htmlContent
-     * @return false|string
-     */
-    public function matchHtmlDescription( $htmlContent = '' )
-    {
-        $reg = "/<meta\s+name=\"description\"\s+content=\"(.*)\"\s*\/?>/ismU";
-        $result = preg_match($reg, $htmlContent, $matches);
-        if(!$result) {
-            return false;
-        }
-        return filterHtml($matches[1]);
-    }
-
-
-
-    /**
-     * 匹配html文件中的关键词并返回
-     * @param string $htmlContent
-     * @return false|string
-     */
-    public function matchHtmlKeywords( $htmlContent = '' )
-    {
-        $reg = "/<meta\s+name=\"keywords\"\s+content=\"(.*)\"\s*\/?>/ismU";
-        $result = preg_match($reg, $htmlContent, $matches);
-        if(!$result) {
-            return false;
-        }
-        return filterHtml($matches[1]);
-    }
-
-    public function matchHtmlRelated(  $htmlContent = '' )
-    {
-
-    }
-
-
 
 
 }
