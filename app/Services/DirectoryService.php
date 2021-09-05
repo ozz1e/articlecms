@@ -5,6 +5,7 @@ namespace App\Services;
 
 
 use App\Models\Directory;
+use App\Models\Editor;
 use App\Models\Post;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -248,23 +249,44 @@ class DirectoryService
         if( empty($diffFilesArr) ){
             return ['status' => 'success','code'=>Response::HTTP_ACCEPTED,'msg'=>'没有合适的文件需要采集'];
         }
-        $this->editorId = EditorService::randomEditor();
 
         $postListArr = [];
+        $defectionFlag = 0;
+        $editorDefectionList = '';
         foreach ($diffFilesArr as $item) {
             $filePath = base_path('../').$this->dirInfo['directory_fullpath'].DIRECTORY_SEPARATOR.$item;
             if( is_file($filePath) ){
                 $fileContent = file_get_contents($filePath);
-                $postListArr[] = $this->transferHtmlToArr($fileContent);
+                //采集失败返回错误信息
+                $resultArr = $this->transferHtmlToArr($fileContent,$item);
+                if( array_key_exists('code',$resultArr) ){
+//                    return $this->transferHtmlToArr($fileContent,$item);
+                    $defectionFlag = 1;
+                    switch ( $resultArr['code'] ){
+                        case 1:
+                            //Todo
+                            break;
+                        case 2:
+                            //Todo
+                            break;
+                        case 3:
+                            $editorDefectionList .= $resultArr['msg'];
+                    }
+                }else{
+                    $postListArr[] = $resultArr;
+                }
+
+
             }
         }
-        dd($postListArr);
+        if( $defectionFlag ){
+            return ['status'=>'failed','msg'=>$editorDefectionList];
+        }
 
-
-        return true;
+        return ['code'=>200,'status'=>'success','msg'=>'采集成功'];
     }
 
-    public function transferHtmlToArr( $htmlContent = '' )
+    public function transferHtmlToArr( $htmlContent = '', $htmlFileName = '' )
     {
         //标题
         $title = $this->matchHtmlDocument($htmlContent,3,'title','title');
@@ -280,13 +302,27 @@ class DirectoryService
             $structure = json_decode($_structureArr['structured_data'],true);
             $timeArr = ['published_at'=>strtotime($structure['datePublished']),'created_at'=>strtotime($structure['dateCreated']),'updated_at'=>strtotime($structure['dateModified'])];
         }else{
-            return ['code'=>1,'status'=>'failed','msg'=>'请添加结构化数据'];
+            return ['code'=>1,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少结构化数据</div>'];
         }
         //结构化数据需要包含父节点
         $structureArr['structured_data'] = filterHtml('<script type="application/ld+json">'.$structureArr['structured_data'].'</script>');
 
+        $editorName = $this->matchHtmlGaJs($htmlContent);
+        //html文件需要含有追踪文件 没有则提示添加
+        if( $editorName ){
+            $editor['editor_id'] = Editor::with('attr')->where('editor_name','=',$editorName)->pluck('id')->first();
+            if( empty($editor['editor_id']) ){
+                return ['code'=>3,'status'=>'failed','msg'=>'<div style="margin-bottom: 10px;"><b>'.$htmlFileName.'</b> 缺少名称为[<b style="color: #f00">'.$editorName.'</b>]的作者信息</div>'];
+            }
+        }else{
+            return ['code'=>2,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少名称为[<b style="color: #f00">'.$editorName.'</b>].js的追踪文件</div>'];
+        }
+
         //文章内容
         $contentArr['content'] = $this->matchHtmlContent($htmlContent);
+        if( empty($contentArr) ){
+            return ['code'=>4,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少文章内容标识</div>'];
+        }
 
         //相关文章数据
         $relatedArr = $this->matchHtmlDocument($htmlContent,2,'dl[@id="am-related-articles"]','related_posts');
@@ -363,10 +399,16 @@ class DirectoryService
         return filterHtml($matches[1]);
     }
 
+    /**
+     * 匹配html文件中的追踪js文件获得作者名称
+     * @param string $htmlContent
+     * @return boolean
+     */
     public function matchHtmlGaJs( $htmlContent = '' )
     {
-        $reg = '/<script.*src=\".*\/team\/(.*).js\"><\/script>/ismU';
-        $result = preg_match($reg, $htmlContent, $matches);
+        $reg = '/src=\".*\/team\/(.*).js\"/i';
+        preg_match($reg, $htmlContent, $matches);
+        return $matches[1]??false;
     }
 
 

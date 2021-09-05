@@ -7,19 +7,16 @@ use App\Admin\Actions\IncludeDirectory;
 use App\Admin\Repositories\Directory;
 use App\Http\Requests\DirectoryRequest;
 use App\Models\Lang;
-use App\Models\Post;
 use App\Models\Template;
 use App\Services\DirectoryService;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
-use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Widgets\Modal;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PHPUnit\Exception;
-use Symfony\Component\HttpFoundation\Response;
+use Dcat\Admin\Layout\Content;
 
 class DirectoryController extends AdminController
 {
@@ -30,6 +27,13 @@ class DirectoryController extends AdminController
      */
     protected function grid()
     {
+        Form::dialog('新增角色')
+            ->click('.create-editor') // 绑定点击按钮
+            ->url('editor/create') // 表单页面链接，此参数会被按钮中的 “data-url” 属性替换。。
+            ->width('700px') // 指定弹窗宽度，可填写百分比，默认 720px
+            ->height('650px') // 指定弹窗高度，可填写百分比，默认 690px
+            ->success('Dcat.reload()'); // 新增成功后刷新页面
+
         return Grid::make(\App\Models\Directory::with(['lang','postTemp','ampTemp']), function (Grid $grid) {
             $grid->withBorder();
             $grid->addTableClass(['table-text-center']);
@@ -82,6 +86,7 @@ class DirectoryController extends AdminController
                 $actions->append(new DeleteDirectory($id));
                 $actions->append(new IncludeDirectory($dirInfo));
             });
+
         });
     }
 
@@ -135,19 +140,32 @@ class DirectoryController extends AdminController
         });
     }
 
+    protected function build()
+    {
+        Form::dialog('新增角色')
+            ->click('.create-editor') // 绑定点击按钮
+            ->url('editor/create') // 表单页面链接，此参数会被按钮中的 “data-url” 属性替换。。
+            ->width('700px') // 指定弹窗宽度，可填写百分比，默认 720px
+            ->height('650px') // 指定弹窗高度，可填写百分比，默认 690px
+            ->success('Dcat.reload()'); // 新增成功后刷新页面
+
+        return "
+<div style='padding:30px 0'>
+    <span class='btn btn-success create-editor'> 新增表单弹窗 </span> &nbsp;&nbsp;
+</div>
+";
+
+    }
+
     public function includeDirectory(DirectoryService $service,Request $request)
     {
         //请求数据为数组 ['template_id'=>'','template_amp_id'=>'','directory_fullpath'=>'','directory_title'=>'','lang_id'=>'']
         $requestData = $request->all('dir');
         $form = new Form();
-//        if( empty(base_path('../').$requestData['dir']['directory_fullpath']) ){
-//            return response()->json(['state' => 'error','code'=>Response::HTTP_PRECONDITION_FAILED,'msg'=>'请确认目录路径']);
-//        }
         try{
             $result = $service->setDirInfo($requestData['dir'])
                 ->includeHtmlFiles();
             return response()->json($result);
-
 
         }catch (\Exception $exception){
             Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');

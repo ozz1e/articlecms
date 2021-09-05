@@ -78,7 +78,21 @@ $(".collect-article").on('click',function (){
     },
     success:function (res){
         if( res.code !== 200 ){
-            Dcat.error(res.msg);
+            if( res.status === 'error'){
+                Dcat.warning(res.msg);
+            }else if( res.status === 'failed' ){
+                layer.open({
+                          type: 1 //Page层类型
+                          ,area: ['600px','auto']
+                          ,title: '提示'
+                          ,shade: 0.6 //遮罩透明度
+                          ,maxmin:false
+                          ,anim: 5 //0-6的动画形式，-1不开启
+                          ,content: '<div style="padding:20px;">'+res.msg+' </div><span style="margin:10px auto;" class="btn btn-primary create-editor">点击添加</span>'
+                        });
+            }
+        }else{
+            Dcat.success(res.msg);
         }
     }
 
