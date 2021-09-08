@@ -1,8 +1,8 @@
-<?php 
+<?php
 return [
     'labels' => [
-        'Post' => 'Post',
-        'post' => 'Post',
+        'Post' => '文章',
+        'post' => '文章管理',
     ],
     'fields' => [
         'title' => '文章标题',

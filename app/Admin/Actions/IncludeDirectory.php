@@ -4,6 +4,7 @@ namespace App\Admin\Actions;
 
 use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Actions\Response;
+use Dcat\Admin\Form;
 use Dcat\Admin\Traits\HasPermissions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -64,6 +65,8 @@ JS;
 
     protected function script()
     {
+       $createEditorUrl = url('admin/editor/create');
+       $modifyHtmlUrl = url('admin/post/modifyHtmlFile');
         return <<<JS
 $(".collect-article").on('click',function (){
     $.ajax({
@@ -81,23 +84,55 @@ $(".collect-article").on('click',function (){
             if( res.status === 'error'){
                 Dcat.warning(res.msg);
             }else if( res.status === 'failed' ){
+                    var addButtonHtml = '';
+                if( res.type === 2 ){
+                    addButtonHtml = '<span style="display:block;width:100px;margin:10px auto;" class="btn btn-primary create-editor">点击添加</span>';
+                }
                 layer.open({
                           type: 1 //Page层类型
-                          ,area: ['600px','auto']
-                          ,title: '提示'
+                          ,area: ['800px','auto']
+                          ,title: '提示(添加完所需信息后需要重新采集)'
                           ,shade: 0.6 //遮罩透明度
                           ,maxmin:false
                           ,anim: 5 //0-6的动画形式，-1不开启
-                          ,content: '<div style="padding:20px;">'+res.msg+' </div><span style="margin:10px auto;" class="btn btn-primary create-editor">点击添加</span>'
+                          ,content: '<div style="padding:20px;">'+res.msg+' </div>'+addButtonHtml
                         });
             }
         }else{
             Dcat.success(res.msg);
+             setTimeout(function () {
+                Dcat.reload();
+            }, 3000);
         }
     }
 
     })
 });
+
+$(document).on('click','.create-editor',function (){
+    layer.open({
+          type: 2,
+          title: '创建作者',
+          shadeClose: true,
+          shade: 0.8,
+          area: ['800px', '90%'],
+          content: "{$createEditorUrl}",
+          end:function (){
+              layer.closeAll();
+          }
+        });
+})
+$(document).on('click','.update-html',function (){
+    var file = $(this).data('file');
+    layer.open({
+          type: 2,
+          title: '编辑文件',
+          shadeClose: true,
+          shade: 0.8,
+          area: ['50%', '90%'],
+          content: "{$modifyHtmlUrl}?file="+file,
+        });
+})
 JS;
     }
     /**
@@ -113,7 +148,6 @@ JS;
             'template_id'=>$this->directoryInfo['template_id'],
             'template_amp_id'=>$this->directoryInfo['template_amp_id'],
             'directory_fullpath'=>$this->directoryInfo['directory_fullpath'],
-            'directory_title'=>$this->directoryInfo['directory_title'],
             'lang_id'=>$this->directoryInfo['lang_id'],
         ];
         $info = json_encode($dirInfo);

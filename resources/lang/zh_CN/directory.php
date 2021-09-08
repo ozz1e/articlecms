@@ -2,7 +2,7 @@
 return [
     'labels' => [
         'Directory' => '目录管理',
-        'directory' => 'Directory',
+        'directory' => '目录管理',
     ],
     'fields' => [
         'domain' => '域名',

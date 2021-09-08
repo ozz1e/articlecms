@@ -37,8 +37,12 @@ Route::group([
     //文章目录
     $router->get('directory/{id}/tempList','DirectoryController@tempList');
     $router->get('directory/tempList','DirectoryController@tempList');
+    $router->get('directory/dialogCreateEditor','DirectoryController@dialogCreateEditor');
     $router->resource('directory','DirectoryController');
     $router->post('directory/createDirectory','DirectoryController@createDirectory');
     $router->put('directory/{id}/updateDirectory','DirectoryController@updateDirectory');
     $router->post('directory/includeDirectory','DirectoryController@includeDirectory');
+    //文章管理
+    $router->any('post/modifyHtmlFile','PostController@modifyHtmlFile');
+    $router->resource('post','PostController');
 });

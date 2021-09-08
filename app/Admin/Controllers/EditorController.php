@@ -99,14 +99,14 @@ class EditorController extends  AdminController
                     is_file($gaFilePath) and $gaFileContent = file_get_contents($gaFilePath);
                 }
 
-                $form->php('code','追踪文件')->required()->value($gaFileContent)->help('文件位置/assets/js/team/作者名称.js');
+                $form->php('code','追踪文件')->value($gaFileContent)->help('文件位置/assets/js/team/作者名称.js');
                 $form->action('editor/createEditor');
                 //去掉底部查看按钮
                 $form->disableViewCheck();
                 //去掉继续编辑
-                $form->disableEditingCheck();
+                //$form->disableEditingCheck();
                 //去掉继续创建
-                $form->disableCreatingCheck();
+                //$form->disableCreatingCheck();
 
 
 
@@ -164,7 +164,7 @@ class EditorController extends  AdminController
 
             $result = $editor->create();
             if( $result ){
-                return $form->response()->success('添加成功')->redirect('/editor');
+                return $form->response()->success('添加成功');
             }else{
                 return $form->response()->error('添加失败');
             }

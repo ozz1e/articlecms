@@ -252,7 +252,9 @@ class DirectoryService
 
         $postListArr = [];
         $defectionFlag = 0;
-        $editorDefectionList = '';
+        $DefectionList = '';
+        $type = 1;
+        $fileName = '';
         foreach ($diffFilesArr as $item) {
             $filePath = base_path('../').$this->dirInfo['directory_fullpath'].DIRECTORY_SEPARATOR.$item;
             if( is_file($filePath) ){
@@ -260,18 +262,16 @@ class DirectoryService
                 //采集失败返回错误信息
                 $resultArr = $this->transferHtmlToArr($fileContent,$item);
                 if( array_key_exists('code',$resultArr) ){
-//                    return $this->transferHtmlToArr($fileContent,$item);
                     $defectionFlag = 1;
-                    switch ( $resultArr['code'] ){
-                        case 1:
-                            //Todo
-                            break;
-                        case 2:
-                            //Todo
-                            break;
-                        case 3:
-                            $editorDefectionList .= $resultArr['msg'];
+                    //code = 1,2,4为编辑html文件
+                    //code = 3为添加作者
+                    if( in_array($resultArr['code'],[1,2,4])){
+                        $type = 1;
+                        $fileName = $this->dirInfo['directory_fullpath'].DIRECTORY_SEPARATOR.$item;
+                    }else{
+                        $type = 2;
                     }
+                    $DefectionList .= $resultArr['msg'];
                 }else{
                     $postListArr[] = $resultArr;
                 }
@@ -280,14 +280,18 @@ class DirectoryService
             }
         }
         if( $defectionFlag ){
-            return ['status'=>'failed','msg'=>$editorDefectionList];
+            return ['status'=>'failed','type'=>$type,'msg'=>$DefectionList,'file'=>$fileName];
         }
+
+        Post::query()->insert($postListArr);
 
         return ['code'=>200,'status'=>'success','msg'=>'采集成功'];
     }
 
     public function transferHtmlToArr( $htmlContent = '', $htmlFileName = '' )
     {
+        //编辑html文件的url
+        $modifyHtmlUrl = '<span style="color:#237fff;cursor:pointer;" class="update-html" data-file="'.$this->dirInfo['directory_fullpath'].'/'.$htmlFileName.'">  编辑</span>';
         //标题
         $title = $this->matchHtmlDocument($htmlContent,3,'title','title');
 
@@ -296,13 +300,13 @@ class DirectoryService
 
         //结构化数据
         $structureArr = $this->matchHtmlDocument($htmlContent,3,'script[@type="application/ld+json"]','structured_data');
-        $_structureArr = $structureArr;
+//        $_structureArr = $structureArr;
         //html文件需要含有结构化数据 没有则提示添加
-        if( !empty($structureArr) ){
-            $structure = json_decode($_structureArr['structured_data'],true);
+        if( !empty($structureArr['structured_data']) ){
+            $structure = json_decode($structureArr['structured_data'],true);
             $timeArr = ['published_at'=>strtotime($structure['datePublished']),'created_at'=>strtotime($structure['dateCreated']),'updated_at'=>strtotime($structure['dateModified'])];
         }else{
-            return ['code'=>1,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少结构化数据</div>'];
+            return ['code'=>1,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少结构化数据'.$modifyHtmlUrl.'</div>'];
         }
         //结构化数据需要包含父节点
         $structureArr['structured_data'] = filterHtml('<script type="application/ld+json">'.$structureArr['structured_data'].'</script>');
@@ -315,13 +319,13 @@ class DirectoryService
                 return ['code'=>3,'status'=>'failed','msg'=>'<div style="margin-bottom: 10px;"><b>'.$htmlFileName.'</b> 缺少名称为[<b style="color: #f00">'.$editorName.'</b>]的作者信息</div>'];
             }
         }else{
-            return ['code'=>2,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少名称为[<b style="color: #f00">'.$editorName.'</b>].js的追踪文件</div>'];
+            return ['code'=>2,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少追踪文件'.$modifyHtmlUrl.'</div>'];
         }
 
         //文章内容
-        $contentArr['content'] = $this->matchHtmlContent($htmlContent);
-        if( empty($contentArr) ){
-            return ['code'=>4,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少文章内容标识</div>'];
+        $contentArr['contents'] = $this->matchHtmlContent($htmlContent);
+        if( !$contentArr['contents'] ){
+            return ['code'=>4,'status'=>'failed','msg'=>'<div><b>'.$htmlFileName.'</b> 缺少文章内容标识'.$modifyHtmlUrl.'</div>'];
         }
 
         //相关文章数据
@@ -332,8 +336,18 @@ class DirectoryService
 
 
         //默认editor_json
-        $editorJson['editor_json'] = json_encode(['editor_id'=>$this->editorId,'editor_name'=>'','ga_code_url'=>'','twitter_url'=>'','editor_avatar'=>'']);
-        return array_merge($title,$metaArr,$structureArr,$contentArr,$relatedArr,$timeArr,$editor,$editorJson,$this->dirInfo);
+        //Todo 生成作者属性后自动填充
+        $editorJson['editor_json'] = json_encode(['editor_id'=>$editor['editor_id'],'editor_name'=>'','ga_code_url'=>'','twitter_url'=>'','editor_avatar'=>'']);
+
+        //summary默认使用description的内容
+        $summary['summary'] = $metaArr['description'];
+
+        //html_fullpath 文件路径+文件名
+        $htmlPath['html_fullpath'] = $this->dirInfo['directory_fullpath'].'/'.$htmlFileName;
+        //html_name html文件名
+        $htmlName['html_name'] = $htmlFileName;
+
+        return array_merge($title,$metaArr,$structureArr,$contentArr,$relatedArr,$timeArr,$editor,$editorJson,$this->dirInfo,$summary,$htmlPath,$htmlName);
 
 
     }

@@ -27,13 +27,6 @@ class DirectoryController extends AdminController
      */
     protected function grid()
     {
-        Form::dialog('新增角色')
-            ->click('.create-editor') // 绑定点击按钮
-            ->url('editor/create') // 表单页面链接，此参数会被按钮中的 “data-url” 属性替换。。
-            ->width('700px') // 指定弹窗宽度，可填写百分比，默认 720px
-            ->height('650px') // 指定弹窗高度，可填写百分比，默认 690px
-            ->success('Dcat.reload()'); // 新增成功后刷新页面
-
         return Grid::make(\App\Models\Directory::with(['lang','postTemp','ampTemp']), function (Grid $grid) {
             $grid->withBorder();
             $grid->addTableClass(['table-text-center']);
@@ -140,28 +133,16 @@ class DirectoryController extends AdminController
         });
     }
 
-    protected function build()
-    {
-        Form::dialog('新增角色')
-            ->click('.create-editor') // 绑定点击按钮
-            ->url('editor/create') // 表单页面链接，此参数会被按钮中的 “data-url” 属性替换。。
-            ->width('700px') // 指定弹窗宽度，可填写百分比，默认 720px
-            ->height('650px') // 指定弹窗高度，可填写百分比，默认 690px
-            ->success('Dcat.reload()'); // 新增成功后刷新页面
-
-        return "
-<div style='padding:30px 0'>
-    <span class='btn btn-success create-editor'> 新增表单弹窗 </span> &nbsp;&nbsp;
-</div>
-";
-
-    }
-
+    /**
+     * 采集目录文章到数据库
+     * @param DirectoryService $service
+     * @param Request $request
+     * @return \Dcat\Admin\Http\JsonResponse|\Illuminate\Http\JsonResponse
+     */
     public function includeDirectory(DirectoryService $service,Request $request)
     {
         //请求数据为数组 ['template_id'=>'','template_amp_id'=>'','directory_fullpath'=>'','directory_title'=>'','lang_id'=>'']
         $requestData = $request->all('dir');
-        $form = new Form();
         try{
             $result = $service->setDirInfo($requestData['dir'])
                 ->includeHtmlFiles();
@@ -169,7 +150,7 @@ class DirectoryController extends AdminController
 
         }catch (\Exception $exception){
             Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
-            return $form->response()->error('采集失败');
+            return response()->json(['code'=>400,'status'=>'error','msg'=>'采集失败']);
         }
     }
 
@@ -208,6 +189,12 @@ class DirectoryController extends AdminController
 
     }
 
+    /**
+     * 执行更新目录信息
+     * @param DirectoryRequest $request
+     * @param DirectoryService $service
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
     public function updateDirectory(DirectoryRequest $request,DirectoryService $service)
     {
         $data = $request->all();
@@ -247,5 +234,10 @@ class DirectoryController extends AdminController
         $langId = $request->get('q');
         $type = $request->get('t');
         return  Template::query()->select('id','temp_name as text')->where('lang_id',$langId)->where('type',$type)->get();
+    }
+
+    public function dialogCreateEditor(Request $request)
+    {
+
     }
 }
