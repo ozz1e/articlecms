@@ -44,5 +44,8 @@ Route::group([
     $router->post('directory/includeDirectory','DirectoryController@includeDirectory');
     //文章管理
     $router->any('post/modifyHtmlFile','PostController@modifyHtmlFile');
+    $router->get('post/loadPostList','PostController@loadPostList');
+    $router->get('post/loadAmpList','PostController@loadAmpList');
+    $router->get('post/postBlockList','PostController@postBlockList');
     $router->resource('post','PostController');
 });

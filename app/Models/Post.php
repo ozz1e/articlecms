@@ -20,4 +20,19 @@ class Post extends Model
         return $this->belongsTo(Directory::class,'directory_fullpath','directory_fullpath')->select(DB::raw('count(*) as total'));
     }
 
+    public function lang()
+    {
+        return $this->hasOne(Lang::class,'id','lang_id');
+    }
+
+    public function editor()
+    {
+        return $this->hasOne(Editor::class,'id','editor_id');
+    }
+
+    public function attr()
+    {
+        return $this->hasMany(EditorAttr::class,'editor_id','editor_id');
+    }
+
 }

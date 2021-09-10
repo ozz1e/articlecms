@@ -12,6 +12,8 @@ namespace Dcat\Admin {
 
     /**
      * @property Grid\Column|Collection id
+     * @property Grid\Column|Collection admin_id
+     * @property Grid\Column|Collection editor_id
      * @property Grid\Column|Collection name
      * @property Grid\Column|Collection type
      * @property Grid\Column|Collection version
@@ -57,7 +59,6 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection editor_name
      * @property Grid\Column|Collection editor_intro
      * @property Grid\Column|Collection editor_avatar
-     * @property Grid\Column|Collection editor_id
      * @property Grid\Column|Collection key
      * @property Grid\Column|Collection uuid
      * @property Grid\Column|Collection connection
@@ -89,6 +90,8 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection email_verified_at
      *
      * @method Grid\Column|Collection id(string $label = null)
+     * @method Grid\Column|Collection admin_id(string $label = null)
+     * @method Grid\Column|Collection editor_id(string $label = null)
      * @method Grid\Column|Collection name(string $label = null)
      * @method Grid\Column|Collection type(string $label = null)
      * @method Grid\Column|Collection version(string $label = null)
@@ -134,7 +137,6 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection editor_name(string $label = null)
      * @method Grid\Column|Collection editor_intro(string $label = null)
      * @method Grid\Column|Collection editor_avatar(string $label = null)
-     * @method Grid\Column|Collection editor_id(string $label = null)
      * @method Grid\Column|Collection key(string $label = null)
      * @method Grid\Column|Collection uuid(string $label = null)
      * @method Grid\Column|Collection connection(string $label = null)
@@ -171,6 +173,8 @@ namespace Dcat\Admin {
 
     /**
      * @property Show\Field|Collection id
+     * @property Show\Field|Collection admin_id
+     * @property Show\Field|Collection editor_id
      * @property Show\Field|Collection name
      * @property Show\Field|Collection type
      * @property Show\Field|Collection version
@@ -216,7 +220,6 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection editor_name
      * @property Show\Field|Collection editor_intro
      * @property Show\Field|Collection editor_avatar
-     * @property Show\Field|Collection editor_id
      * @property Show\Field|Collection key
      * @property Show\Field|Collection uuid
      * @property Show\Field|Collection connection
@@ -248,6 +251,8 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection email_verified_at
      *
      * @method Show\Field|Collection id(string $label = null)
+     * @method Show\Field|Collection admin_id(string $label = null)
+     * @method Show\Field|Collection editor_id(string $label = null)
      * @method Show\Field|Collection name(string $label = null)
      * @method Show\Field|Collection type(string $label = null)
      * @method Show\Field|Collection version(string $label = null)
@@ -293,7 +298,6 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection editor_name(string $label = null)
      * @method Show\Field|Collection editor_intro(string $label = null)
      * @method Show\Field|Collection editor_avatar(string $label = null)
-     * @method Show\Field|Collection editor_id(string $label = null)
      * @method Show\Field|Collection key(string $label = null)
      * @method Show\Field|Collection uuid(string $label = null)
      * @method Show\Field|Collection connection(string $label = null)

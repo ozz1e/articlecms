@@ -2,13 +2,18 @@
 
 namespace App\Admin\Controllers;
 
-use App\Admin\Repositories\Post;
+use App\Models\Directory;
+use App\Models\Editor;
+use App\Models\Lang;
+use App\Models\Post;
+use App\Models\PostBlock;
+use App\Models\Template;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Layout\Content;
-use Dcat\Admin\Repositories\EloquentRepository;
-use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
+use Dcat\Admin\Widgets\Modal;
+use Illuminate\Support\Facades\DB;
 
 class PostController extends AdminController
 {
@@ -19,69 +24,57 @@ class PostController extends AdminController
      */
     protected function grid()
     {
-        return Grid::make(new Post(), function (Grid $grid) {
-            $grid->column('id')->sortable();
-            $grid->column('title');
-            $grid->column('keywords');
-            $grid->column('description');
-            $grid->column('directory_fullpath');
-            $grid->column('html_fullpath');
-            $grid->column('html_name');
-            $grid->column('summary');
-            $grid->column('contents');
-            $grid->column('template_id');
-            $grid->column('template_amp_id');
-            $grid->column('post_status');
-            $grid->column('editor_json');
-            $grid->column('editor_id');
-            $grid->column('lang_id');
-            $grid->column('related_posts');
-            $grid->column('published_at');
-            $grid->column('structured_data');
-            $grid->column('fb_comment');
-            $grid->column('lightbox');
-            $grid->column('created_at');
-            $grid->column('updated_at')->sortable();
+        return Grid::make(\App\Models\Post::with(['lang','attr']), function (Grid $grid) {
+            $grid->withBorder();
+            $grid->addTableClass(['table-text-center']);
+            $grid->column('id')->width('50px')->sortable();
+//            $grid->column('html_fullpath')->display(function ($html_fullpath){
+//                return '<a href="/'.$html_fullpath.'" target="_blank">'.$html_fullpath.'</a>';
+//            });
+            $grid->column('html_fullpath')->link(function ($value){
+               return admin_url('admin'.$value);
+            })->setAttributes(['class' => 'text-left']);
+            $grid->column('attr','作者')->width('150px')->display(function($attr){
+                $tbody = '<div class="table-responsive table-wrapper complex-container table-middle mt-1 table-collapse "><table class="table custom-data-table data-table"><thead><tr><th>属性名</th><th>属性值</th></tr></thead><tbody>';
+                foreach ($attr as $item) {
+                    $tbody .= '<tr><td>'.$item->key.'</td><td>'.$item->value.'</td></tr>';
+                }
+                $tbody .= '</tbody></table></div>';
+                $modal = Modal::make()
+                    ->lg()
+                    ->title('作者信息')
+                    ->body($tbody)
+                    ->button('<button class="btn btn-primary"><i class="feather icon-eye"></i> '.$this->editor->editor_name.'</button>');
+                return $modal;
+            });
+            $grid->column('lang.lang_name','语言')->width('60px');
+            $grid->column('template_id')->width('180px')->select($this->templateList(),true)->help('选择即可更换文章模板');
+            $grid->column('post_status')->width('95px')->using([0=>'未发布',1=>'已发布'])
+            ->dot([
+                0=>'danger',
+                1=>'success'
+            ]);
+
+            $grid->column('created_at')->width('210px')->display(function ($created_at){
+                return $created_at;
+            });
+            $grid->column('updated_at')->width('210px')->display(function($updated_at){
+                return $updated_at;
+            })->sortable();
+
+            // 禁用详情按钮
+            $grid->disableViewButton();
 
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id');
-
+                // 更改为 panel 布局
+                $filter->panel();
+                $filter->equal('id')->width(3);
+                $filter->equal('lang_id')->select($this->langList())->width(3);
+                $filter->equal('editor_id')->select($this->editorList())->width(3);
+                $filter->equal('post_status')->select(['未发布','已发布'])->width(3);
+                $filter->equal('directory_fullpath')->select($this->directoryList())->width(3);
+                $filter->like('html_name','文件名')->width(3);
             });
-        });
-    }
-
-    /**
-     * Make a show builder.
-     *
-     * @param mixed $id
-     *
-     * @return Show
-     */
-    protected function detail($id)
-    {
-        return Show::make($id, new Post(), function (Show $show) {
-            $show->field('id');
-            $show->field('title');
-            $show->field('keywords');
-            $show->field('description');
-            $show->field('directory_fullpath');
-            $show->field('html_fullpath');
-            $show->field('html_name');
-            $show->field('summary');
-            $show->field('contents');
-            $show->field('template_id');
-            $show->field('template_amp_id');
-            $show->field('post_status');
-            $show->field('editor_json');
-            $show->field('editor_id');
-            $show->field('lang_id');
-            $show->field('related_posts');
-            $show->field('published_at');
-            $show->field('structured_data');
-            $show->field('fb_comment');
-            $show->field('lightbox');
-            $show->field('created_at');
-            $show->field('updated_at');
         });
     }
 
@@ -93,29 +86,88 @@ class PostController extends AdminController
     protected function form()
     {
         return Form::make(new Post(), function (Form $form) {
-            $form->display('id');
-            $form->text('title');
-            $form->text('keywords');
-            $form->text('description');
-            $form->text('directory_fullpath');
-            $form->text('html_fullpath');
-            $form->text('html_name');
-            $form->text('summary');
-            $form->text('contents');
-            $form->text('template_id');
-            $form->text('template_amp_id');
-            $form->text('post_status');
-            $form->text('editor_json');
-            $form->text('editor_id');
-            $form->text('lang_id');
-            $form->text('related_posts');
-            $form->text('published_at');
-            $form->text('structured_data');
-            $form->text('fb_comment');
-            $form->text('lightbox');
+            $form->block(8, function (Form\BlockForm $form) {
+                $form->text('title')->required()->width(11,1);
+                $form->text('html_name')->required()->width(11,1);
+                $form->ckeditor('contents')->required()->width(11,1);
+                $form->table('extra', function (Form\NestedForm $table) {
+                    $table->text('key');
+                    $table->text('value');
+                    $table->text('desc');
+                });
+            });
+            $form->block(4, function (Form\BlockForm $form) {
+                //Todo 显示当前登录者绑定的作者
+                $form->select('editor_id')->required()->options($this->editorList())->width(9,3);
+                $form->select('directory_fullpath')->required()->options($this->directoryList())->loads(['template_id','template_amp_id'],['post/loadPostList','post/loadAmpList'])->width(9,3);
+                $form->select('template_id')->required()->width(9,3)->default(1);
+                $form->select('template_amp_id')->required()->width(9,3)->default(1,true);
+                $form->textarea('description')->required()->width(9,3);
+                //Todo 建立关键词库
+                $form->tags('keywords')->width(9,3)->required()->help('键入关键词后以英文逗号结束，回车后即可生成');
+                $form->textarea('summary')->width(9,3);
 
-            $form->display('created_at');
-            $form->display('updated_at');
+                $form->next(function (Form\BlockForm $form) {
+                    $form->title('文章插件');
+                    $form->radio('fb_comment','FaceBook评论')->options(['关闭',  '开启'])->default(1)->width(9,3);
+                    $form->radio('lightbox','lightBox幻灯')->options(['关闭',  '开启'])->default(1)->width(9,3);
+                    $form->radio('article_index','目录索引')->options(['关闭',  '开启'])->default(1)->width(9,3);
+                });
+
+                $form->next(function (Form\BlockForm $form) {
+                    $form->title('文章Block');
+
+                    $blockList = $this->postBlockList();
+                    foreach ($blockList as $key=>$item) {
+                        $_form = new Form();
+                        $_form->disableHeader();
+                        $_form->disableViewCheck();
+                        $_form->disableEditingCheck();
+                        $_form->disableCreatingCheck();
+                        $_form->disableResetButton();
+                        $_form->disableSubmitButton();
+                        $_form->tools(function (Form\Tools $tools) {
+                            $tools->disableView();
+                            $tools->disableList();
+                        });
+
+                         $_form->radio('block')
+                            ->when(1, function ()use($_form,$item){
+                                $_form->html($item->content);
+                                admin_css(["assets/css/post_block/{$item->title}.css"]);
+                            })
+                            ->when(2, function ()use($_form,$item) {
+                                $_form->textarea('content','代码')->rows(30)->width(11,1)->default($item->content);
+                                $_form->html($item->description)->label('说明')->width(11,1);
+
+                            })->options([
+                                1 => '示例',
+                                2 => '源码',
+                            ])
+                            ->default(2);
+
+                        $varName = 'modal'.$key;
+                        $$varName  = Modal::make()
+                            ->lg()
+                            ->title($item->title)
+                            ->body($_form)
+                            ->button('<button class="btn btn-primary">'.$item->title.'</button>');
+
+                        $form->column(6,function (Form $form_)use($form,$varName){
+                            $form->html($$varName);
+                        });
+
+
+
+                    }
+
+
+                });
+
+
+            });
+
+
         });
     }
 
@@ -161,5 +213,79 @@ JS
             $form->action(url('admin/post/modifyHtmlFile'));
         });
         return $content->breadcrumb( ['text' => '文章管理'],['text' => '编辑文件'])->body($html);
+    }
+
+    /**
+     * 获取模板列表api
+     * @return array
+     */
+    public function templateList( $type = 1 )
+    {
+        return Template::query()->where('type',$type)->pluck('temp_name','id')->toArray();
+    }
+
+    /**
+     * 获取语言列表api
+     * @return array
+     */
+    public function langList()
+    {
+        return Lang::query()->pluck('lang_name','id')->toArray();
+    }
+
+    /**
+     * 获取作者列表api
+     * @return array
+     */
+    public function editorList()
+    {
+        return Editor::query()->pluck('editor_name','id')->toArray();
+    }
+
+    /**
+     * 获取目录列表api
+     * @return array
+     */
+    public function directoryList()
+    {
+        return Directory::query()->pluck('directory_fullpath','directory_fullpath')->toArray();
+    }
+
+    /**
+     * 联动加载post列表api
+     * @return array|\Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection
+     */
+    public function loadPostList()
+    {
+        $path = request()->all('q');
+        $dirInfo = Directory::with('lang')->where('directory_fullpath',$path)->first()->toArray();
+        if( !$dirInfo ){
+            return $this->templateList();
+        }
+        return Template::query()->select('id','temp_name as text')->where('lang_id',$dirInfo['lang']['id'])->where('type',1)->get();
+    }
+
+    /**
+     * 联动加载amp模板api
+     * @return array|\Illuminate\Database\Eloquent\Builder[]|\Illuminate\Database\Eloquent\Collection
+     */
+    public function loadAmpList()
+    {
+        $path = request()->all('q');
+        $dirInfo = Directory::with('lang')->where('directory_fullpath',$path)->first()->toArray();
+
+        if( !$dirInfo ){
+            return $this->templateList(2);
+        }
+        return Template::query()->select('id','temp_name as text')->where('lang_id',$dirInfo['lang']['id'])->where('type',2)->get();
+    }
+
+    /**
+     * 获取文章block api
+     * @return array
+     */
+    public function postBlockList()
+    {
+        return DB::table('post_block')->select(['id','title','content','description'])->get();
     }
 }

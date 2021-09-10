@@ -9,6 +9,7 @@ CKEDITOR.editorConfig = function (config) {
     // config.uiColor = '#AADC6E';
 
     // The toolbar groups arrangement, optimized for two toolbar rows.
+    config.height = '500px';
     config.toolbarGroups = [
         {name: 'document', groups: ['mode', 'document', 'doctools']},
         {name: 'others'},

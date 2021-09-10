@@ -77,7 +77,6 @@ class EditorController extends  AdminController
     protected function form()
     {
         return Form::make(new Editor(), function (Form $form) {
-//                $form->ckeditor('content');
                 $editorId = $form->model()->id;
                 $form->text('editor_name')->required()->rules('regex:/^[a-zA-Z\d]+$/|unique:editor,editor_name',[
                     'regex'=>'作者名称必须为字母',

@@ -311,7 +311,7 @@ return [
     */
     'layout' => [
         // default, blue, blue-light, green
-        'color' => 'default',
+        'color' => 'blue-light',
 
         // sidebar-separate
         'body_class' => [],
