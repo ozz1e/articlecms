@@ -153,13 +153,54 @@ class PostController extends AdminController
                             ->body($_form)
                             ->button('<button class="btn btn-primary">'.$item->title.'</button>');
 
-                        $form->column(6,function (Form $form_)use($form,$varName){
-                            $form->html($$varName);
-                        });
-
-
+                        $form->html($$varName);
+                        unset($_form);
 
                     }
+
+
+//                    $form->row(function (Form\Row $form) {
+//                        $blockList = $this->postBlockList();
+//                        foreach ($blockList as $key=>$item) {
+//                            $_form = new Form();
+//                            $_form->disableHeader();
+//                            $_form->disableViewCheck();
+//                            $_form->disableEditingCheck();
+//                            $_form->disableCreatingCheck();
+//                            $_form->disableResetButton();
+//                            $_form->disableSubmitButton();
+//                            $_form->tools(function (Form\Tools $tools) {
+//                                $tools->disableView();
+//                                $tools->disableList();
+//                            });
+//
+//                            $_form->radio('block')
+//                                ->when(1, function ()use($_form,$item){
+//                                    $_form->html($item->content)->width(12);
+//                                    admin_css(["assets/css/post_block/{$item->title}.css"]);
+//                                })
+//                                ->when(2, function ()use($_form,$item) {
+//                                    $_form->textarea('content','代码')->rows(30)->width(11,1)->default($item->content);
+//                                    $_form->html($item->description)->label('说明')->width(11,1);
+//
+//                                })->options([
+//                                    1 => '示例',
+//                                    2 => '源码',
+//                                ])
+//                                ->default(2);
+//
+//                            $varName = 'modal'.$key;
+//                            $$varName  = Modal::make()
+//                                ->lg()
+//                                ->title($item->title)
+//                                ->body($_form)
+//                                ->button('<button class="btn btn-primary">'.$item->title.'</button>');
+//
+//                            $form->width(4)->html($$varName);
+//
+//                        }
+//
+//                    });
 
 
                 });
