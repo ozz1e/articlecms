@@ -88,12 +88,12 @@ class PostController extends AdminController
         return Form::make(new Post(), function (Form $form) {
             $form->block(8, function (Form\BlockForm $form) {
                 $form->text('title')->required()->width(11,1);
-                $form->text('html_name')->required()->width(11,1);
+                $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html');
                 $form->ckeditor('contents')->required()->width(11,1);
-                $form->table('extra', function (Form\NestedForm $table) {
-                    $table->text('key');
-                    $table->text('value');
-                    $table->text('desc');
+                $form->ckeditor('related_articles','相关文章')->width(11,1)->attribute(['id'=>'plain_mode']);
+                $form->table('自定义属性', function (Form\NestedForm $table) {
+                    $table->select('post_attr','属性名');
+                    $table->textarea('post_attr_value','属性值');
                 });
             });
             $form->block(4, function (Form\BlockForm $form) {
@@ -116,7 +116,7 @@ class PostController extends AdminController
 
                 $form->next(function (Form\BlockForm $form) {
                     $form->title('文章Block');
-
+                    admin_js(["assets/js/postBlock.js"]);
                     $form->row(function (Form\Row $form) {
                         $blockList = $this->postBlockList();
                         foreach ($blockList as $key=>$item) {
@@ -145,11 +145,12 @@ class PostController extends AdminController
                                 ])->default(2);
 
                             $varName = 'modal'.$key;
+                            $cssFilePath = '/assets/css/post_block/'.$item->title.'.css';
                             $$varName  = Modal::make()
                                 ->lg()
                                 ->title($item->title)
                                 ->body($_form)
-                                ->button('<button class="btn btn-primary">'.$item->title.'</button>');
+                                ->button('<button class="btn btn-primary post-block-btn" data-cssFileName="'.$item->title.'" data-cssFilePath="'.admin_asset($cssFilePath).'">'.$item->title.'</button>');
 
                             $form->width(4)->html($$varName);
                             unset($_form);
