@@ -1,0 +1,6 @@
+.has-many-attr tr th{
+    text-align: center;
+}
+tr.has-many-attr-form td:first-child{
+    width: 25%;
+}
