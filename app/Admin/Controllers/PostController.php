@@ -89,12 +89,16 @@ class PostController extends AdminController
             $form->block(8, function (Form\BlockForm $form) {
                 $form->text('title')->required()->width(11,1);
                 $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html');
-                $form->ckeditor('contents')->required()->width(11,1);
+                $form->ckeditor('contents')->required()->width(11,1)->attribute(['id'=>'normal_mode']);
                 $form->ckeditor('related_articles','相关文章')->width(11,1)->attribute(['id'=>'plain_mode']);
-                $form->table('自定义属性', function (Form\NestedForm $table) {
-                    $table->select('post_attr','属性名');
-                    $table->textarea('post_attr_value','属性值');
-                });
+                $form->table('attr', function (Form\NestedForm $table) {
+                    $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover','next_page','popular_articles','quick_search','read_time','summary_articles','publish_date']);
+                    //$table->text('gdfg');
+                    //$table->ckeditor('post_attr_value','属性值')->setElementClass('attr_editor');
+
+                })->width(11,1)->label('自定义属性');
+
+
             });
             $form->block(4, function (Form\BlockForm $form) {
                 //Todo 显示当前登录者绑定的作者
