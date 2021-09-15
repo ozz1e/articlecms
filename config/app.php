@@ -176,7 +176,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\EditorServiceProvider::class,
         App\Providers\DirectoryServiceProvider::class,
-
+        App\Providers\PostServiceProvider::class,
 
     ],
 

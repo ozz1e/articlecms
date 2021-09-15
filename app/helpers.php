@@ -22,6 +22,6 @@ if (! function_exists('getDir')) {
 if( !function_exists('filterHtml')){
     function filterHtml( $content = '' )
     {
-        return htmlentities(trim($content));
+        return htmlspecialchars(htmlentities($content));
     }
 }

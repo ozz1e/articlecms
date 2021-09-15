@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Http\Requests\PostRequest;
 use App\Models\Directory;
 use App\Models\Editor;
 use App\Models\Lang;
@@ -86,6 +87,7 @@ class PostController extends AdminController
     protected function form()
     {
         return Form::make(new Post(), function (Form $form) {
+
             $form->block(8, function (Form\BlockForm $form) {
                 $form->text('title')->required()->width(11,1);
                 $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html');
@@ -97,7 +99,8 @@ class PostController extends AdminController
                     $table->ckeditor('post_attr_value','属性值')->setElementClass('attr_editor');
                 })->width(11,1)->label('属性');
 
-
+                // 显示底部提交按钮
+                $form->showFooter();
             });
             $form->block(4, function (Form\BlockForm $form) {
                 //Todo 显示当前登录者绑定的作者
@@ -108,7 +111,7 @@ class PostController extends AdminController
                 $form->textarea('description')->required()->width(9,3);
                 //Todo 建立关键词库
                 $form->tags('keywords')->width(9,3)->required()->help('键入关键词后以英文逗号结束，回车后即可生成');
-                $form->textarea('summary')->width(9,3);
+                $form->textarea('summary')->required()->width(9,3);
 
                 $form->next(function (Form\BlockForm $form) {
                     $form->title('文章插件');
@@ -164,12 +167,15 @@ class PostController extends AdminController
                 $form->action('post/createArticle');
             }
 
+
+
         });
     }
 
-    public function createArticle()
+    public function createArticle(PostRequest $request)
     {
-
+        $data = $request->post();
+        dd($data);
     }
 
     public function modifyHtmlFile(Content $content)

@@ -47,5 +47,6 @@ Route::group([
     $router->get('post/loadPostList','PostController@loadPostList');
     $router->get('post/loadAmpList','PostController@loadAmpList');
     $router->get('post/postBlockList','PostController@postBlockList');
+    $router->post('post/createArticle','PostController@createArticle');
     $router->resource('post','PostController');
 });
