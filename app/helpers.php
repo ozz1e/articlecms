@@ -19,9 +19,22 @@ if (! function_exists('getDir')) {
     }
 }
 
+/**
+ * 过滤html内容
+ */
 if( !function_exists('filterHtml')){
     function filterHtml( $content = '' )
     {
         return htmlspecialchars(htmlentities($content));
+    }
+}
+
+/**
+ * 还原html内容
+ */
+if( !function_exists('deCodeHtml')){
+    function deCodeHtml( $content = '' )
+    {
+        return htmlspecialchars_decode(html_entity_decode($content));
     }
 }

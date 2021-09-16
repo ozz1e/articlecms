@@ -15,6 +15,10 @@ class Post extends Model
 
     protected $dateFormat = 'U';
 
+    public $timestamps = true;
+
+    protected $fillable = ['title','keywords','description','directory_fullpath','html_fullpath','html_name','summary','contents','template_id','template_amp_id','post_status','editor_json','editor_id','lang_id','related_posts','published_at','structured_data','fb_comment','lightbox'];
+
     public function articleNum()
     {
         return $this->belongsTo(Directory::class,'directory_fullpath','directory_fullpath')->select(DB::raw('count(*) as total'));

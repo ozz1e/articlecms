@@ -9,12 +9,14 @@ use App\Models\Lang;
 use App\Models\Post;
 use App\Models\PostBlock;
 use App\Models\Template;
+use App\Services\PostService;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Layout\Content;
 use Dcat\Admin\Http\Controllers\AdminController;
 use Dcat\Admin\Widgets\Modal;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PostController extends AdminController
 {
@@ -92,7 +94,8 @@ class PostController extends AdminController
                 $form->text('title')->required()->width(11,1);
                 $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html');
                 $form->ckeditor('contents')->required()->width(11,1)->attribute(['id'=>'normal_mode']);
-                $form->ckeditor('related_articles','相关文章')->width(11,1)->attribute(['id'=>'plain_mode']);
+                $form->ckeditor('related_posts')->width(11,1)->attribute(['id'=>'plain_mode'])->label('相关文章');
+//                $form->textarea('related_posts','相关文章')->width(11,1);
                 admin_css(["assets/css/postAttr.css"]);
                 $form->table('attr', function (Form\NestedForm $table) {
                     $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover','next_page','popular_articles','quick_search','read_time','summary_articles','publish_date']);
@@ -172,10 +175,35 @@ class PostController extends AdminController
         });
     }
 
-    public function createArticle(PostRequest $request)
+    public function createArticle(PostRequest $request,PostService $service)
     {
         $data = $request->post();
-        dd($data);
+        $form = new Form();
+        try{
+            $result = $service->setTitle($data['title'])
+                ->setKeywords($data['keywords'])
+                ->setDescription($data['description'])
+                ->setDirFullPath($data['directory_fullpath'])
+                ->setHtmlName($data['html_name'])
+                ->setHtmlFullPath()
+                ->setSummary($data['summary'])
+                ->setContents($data['contents'])
+                ->setTemplateId($data['template_id'])
+                ->setTemplateAmpId($data['template_amp_id'])
+                ->setEditorId($data['editor_id'])
+                ->setEditorJson()
+                ->setLangId()
+                ->setRelatedPosts($data['related_posts'])
+                ->setStructuredData()
+                ->setFaceBookComment($data['fb_comment'])
+                ->setLightBox($data['lightbox'])
+                ->create();
+            dd($result);
+
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('文章保存失败');
+        }
     }
 
     public function modifyHtmlFile(Content $content)
