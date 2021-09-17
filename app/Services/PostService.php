@@ -6,7 +6,11 @@ namespace App\Services;
 
 use App\Models\Directory;
 use App\Models\Editor;
+use App\Models\EditorAttr;
+use App\Models\Lang;
 use App\Models\Post;
+use App\Models\PostAttr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use League\Flysystem\Exception;
 
@@ -83,6 +87,11 @@ class PostService
      */
     protected $editor_id;
     /**
+     * 作者名称
+     * @var string
+     */
+    protected $editor_name;
+    /**
      * 语言id
      * @var int
      */
@@ -128,10 +137,14 @@ class PostService
      */
     protected $lightbox;
     /**
+     * 文章属性
+     * @var array
+     */
+    protected $attr;
+    /**
      * Post模板的结构化数据模板
      * @var string
      */
-
     static public $articleJsonTpl = '<script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -212,7 +225,7 @@ class PostService
 
     public function setTitle( $title = '' )
     {
-        $this->title = filterHtml($title);
+        $this->title = htmlentities($title);
         return $this;
     }
 
@@ -224,7 +237,7 @@ class PostService
 
     public function setDescription( $desc = '' )
     {
-        $this->description = filterHtml($desc);
+        $this->description = htmlentities($desc);
         return $this;
     }
 
@@ -236,7 +249,7 @@ class PostService
 
     public function setHtmlName( $htmlName = '' )
     {
-        $this->html_name = filterHtml($htmlName.self::fileTempTag.self::fileExt);
+        $this->html_name = htmlentities($htmlName.self::fileTempTag.self::fileExt);
         return $this;
     }
 
@@ -248,7 +261,7 @@ class PostService
 
     public function setSummary( $summary = '' )
     {
-        $this->summary = filterHtml($summary);
+        $this->summary = htmlentities($summary);
         return $this;
     }
 
@@ -279,6 +292,16 @@ class PostService
     public function setEditorId( $editorId = 1 )
     {
         $this->editor_id = $editorId;
+        return $this;
+    }
+
+    public function setEditorName()
+    {
+        $editorInfo = Editor::query()->select('editor_name')->find($this->editor_id);
+        if( !$editorInfo ){
+            throw new \Exception('未找到作者信息');
+        }
+        $this->editor_name = $editorInfo->lang_name;
         return $this;
     }
 
@@ -324,7 +347,7 @@ class PostService
 
     public function setRelatedPosts( $relatedPost = '' )
     {
-        $this->related_posts = filterHtml($relatedPost);
+        $this->related_posts = htmlentities($relatedPost);
         return $this;
     }
 
@@ -357,7 +380,7 @@ class PostService
             '{<created_at>}' => !is_null($this->created_at) ? $this->created_at : date('F j, Y', time()),
             '{<published_at>}' => !is_null($this->published_at) ? $this->published_at : date('F j, Y', time()),
             '{<updated_at>}' => !is_null($this->updated_at) ? $this->updated_at : date('F j, Y', time()),
-            '{<editor_name>}' => $this->getEditorName($this->editor_id),
+            '{<editor_name>}' => $this->editor_name,
             '{<directory_title>}' => $this->getDirectoryTitle($this->directory_fullpath),
             '{<directory_fullpath>}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->directory_fullpath.'/',
         ];
@@ -378,6 +401,25 @@ class PostService
         return $this;
     }
 
+    public function setAttr( $attr = [] )
+    {
+        $postAttr = [];
+        $i = 0;
+        foreach ($attr as $item) {
+            //_remove_=1为移除项
+            if( $item['_remove_'] == 1 ){
+                continue;
+            }
+            $postAttr[$i ]['post_htmlpath'] = $this->html_fullpath;
+            $postAttr[$i ]['post_key'] = $item['post_attr'];
+            $postAttr[$i ]['post_value'] = htmlentities($item['post_attr_value']);
+            $postAttr[$i ]['post_html'] = 1;
+            $i++;
+        }
+        $this->attr = $postAttr;
+        return $this;
+    }
+
     /**
      * 将结构化数据模板中的变量具象化
      * @param array $data 需要替换的变量数组
@@ -387,22 +429,7 @@ class PostService
     public function getStructureJson(array $data = [], string $type = 'post')
     {
         $tpl = ($type == 'post') ? static::$articleJsonTpl : static::$ampJsonTpl;
-        return filterHtml(strtr($tpl,$data));
-    }
-
-    /**
-     * 获取作者名称
-     * @param int $editorId
-     * @return string
-     * @throws \Exception
-     */
-    public function getEditorName( $editorId = 1 )
-    {
-        $editorInfo = Editor::query()->select('editor_name')->find($editorId);
-        if( !$editorInfo ){
-            throw new \Exception('未找到作者信息');
-        }
-        return $editorInfo->editor_name;
+        return htmlentities(strtr($tpl,$data));
     }
 
     /**
@@ -418,6 +445,19 @@ class PostService
             throw new \Exception('未找到目录信息');
         }
         return $dirTitle;
+    }
+
+    /**
+     * 获取文章的语言名称
+     * @return mixed
+     */
+    public function getArticleLang()
+    {
+        $lang = Lang::find($this->lang_id);
+        if( !$lang ){
+            throw new \Exception('未找到语言信息');
+        }
+        return $lang->lang_name;
     }
 
     /**
@@ -442,20 +482,13 @@ class PostService
         return $arr;
     }
 
-    public function generateHtmlFile()
-    {
-        //1.生成的html文件有'--tmp'标识为预览文件
-        //2.预览文件不会进入目录的文章列表
-        //3.预览文件禁止搜索引擎抓取
-        //4.生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
-    }
-
     /**
-     * 保存新建文章的数据
+     * 保存新建文章的数据以及属性
      * @return bool
      */
     public function create()
     {
+        DB::beginTransaction();
         Post::create([
             'title' => $this->title,
             'keywords' => $this->keywords,
@@ -477,8 +510,58 @@ class PostService
             'fb_comment' => $this->fb_comment,
             'lightbox' => $this->lightbox,
         ]);
-//        Post::create((array)$this);
+        $postAttr = PostAttr::insert($this->attr);
+        !$postAttr and DB::rollBack();
+        DB::commit();
         return true;
+    }
+
+    public function generateHtmlFile()
+    {
+        //1.生成的html文件有'--tmp'标识为预览文件
+        //2.预览文件不会进入目录的文章列表
+        //3.预览文件禁止搜索引擎抓取
+        //4.生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
+        //5.生成文件图片会加lazyload的效果
+        //6.文章属性的标签显示不同的语言
+
+
+        //模板中需要替换的变量
+        $replaceVarArr = [
+            '{{language}}' => $this->getArticleLang(),
+            '{{title}}' => html_entity_decode($this->title),
+            '{{description}}' => html_entity_decode($this->description),
+            '{{keywords}}' => html_entity_decode($this->keywords),
+            '{{editor-name}}' => $this->editor_name,
+            '{{html-fullpath}}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->html_fullpath,
+            '<!--{{amp-html-path}}-->' => $this->getAmpHtmlPath(),
+            '<!--{{structrued-data}}-->' => html_entity_decode($this->structured_data),
+            '<!--{{ga-code-url}}-->' => $this->getGaUrl(),
+        ];
+    }
+
+    /**
+     * 获取 amphtml 标签内容
+     * @return string
+     */
+    public function getAmpHtmlPath()
+    {
+        $fileName = substr_replace($this->html_name,'.amp',-5,0);
+        return '<link rel="amphtml" href="'.$fileName.'">';
+    }
+
+    /**
+     * 获取作者Google追踪文件路径
+     * @return string
+     */
+    public function getGaUrl()
+    {
+        $attr = EditorAttr::query()->where('editor_id',$this->editor_id)->where('key','ga_code_url')->select('value')->first();
+        if( $attr && is_file(base_path('..').$attr->value) ){
+            return '<script src="'.$attr->value.'"></script>';
+        }else{
+            return '';
+        }
     }
 
 

@@ -95,10 +95,10 @@ class PostController extends AdminController
                 $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html');
                 $form->ckeditor('contents')->required()->width(11,1)->attribute(['id'=>'normal_mode']);
                 $form->ckeditor('related_posts')->width(11,1)->attribute(['id'=>'plain_mode'])->label('相关文章');
-//                $form->textarea('related_posts','相关文章')->width(11,1);
                 admin_css(["assets/css/postAttr.css"]);
                 $form->table('attr', function (Form\NestedForm $table) {
-                    $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover','next_page','popular_articles','quick_search','read_time','summary_articles','publish_date']);
+                    //$table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover','next_page','popular_articles','quick_search','read_time','summary_articles','publish_date']);
+                    $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover'=>'cover','next_page'=>'next_page','popular_articles'=>'popular_articles','quick_search'=>'quick_search','read_time'=>'read_time','summary_articles'=>'summary_articles','publish_date'=>'publish_date']);
                     $table->ckeditor('post_attr_value','属性值')->setElementClass('attr_editor');
                 })->width(11,1)->label('属性');
 
@@ -180,7 +180,7 @@ class PostController extends AdminController
         $data = $request->post();
         $form = new Form();
         try{
-            $result = $service->setTitle($data['title'])
+            $article = $service->setTitle($data['title'])
                 ->setKeywords($data['keywords'])
                 ->setDescription($data['description'])
                 ->setDirFullPath($data['directory_fullpath'])
@@ -191,13 +191,15 @@ class PostController extends AdminController
                 ->setTemplateId($data['template_id'])
                 ->setTemplateAmpId($data['template_amp_id'])
                 ->setEditorId($data['editor_id'])
+                ->setEditorName()
                 ->setEditorJson()
                 ->setLangId()
                 ->setRelatedPosts($data['related_posts'])
                 ->setStructuredData()
                 ->setFaceBookComment($data['fb_comment'])
-                ->setLightBox($data['lightbox'])
-                ->create();
+                ->setLightBox($data['lightbox']);
+            array_key_exists('attr',$data) and $article = $article->setAttr($data['attr']);
+            $result = $article->create();
             dd($result);
 
         }catch (\Exception $exception){
