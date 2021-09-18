@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 
 class PostController extends AdminController
 {
+    public $test;
     /**
      * Make a grid builder.
      *
@@ -191,7 +192,7 @@ class PostController extends AdminController
                 ->setTemplateId($data['template_id'])
                 ->setTemplateAmpId($data['template_amp_id'])
                 ->setEditorId($data['editor_id'])
-                ->setEditorName()
+                ->setEditorInfo()
                 ->setEditorJson()
                 ->setLangId()
                 ->setRelatedPosts($data['related_posts'])

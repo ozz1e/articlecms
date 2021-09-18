@@ -10,6 +10,7 @@ use App\Models\EditorAttr;
 use App\Models\Lang;
 use App\Models\Post;
 use App\Models\PostAttr;
+use App\Models\Template;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
 use League\Flysystem\Exception;
@@ -87,10 +88,10 @@ class PostService
      */
     protected $editor_id;
     /**
-     * 作者名称
+     * 作者信息(名称和头像)
      * @var string
      */
-    protected $editor_name;
+    protected $editor_info;
     /**
      * 语言id
      * @var int
@@ -141,6 +142,11 @@ class PostService
      * @var array
      */
     protected $attr;
+    /**
+     * 新建文章的对象实例
+     * @var object
+     */
+    protected $postObj;
     /**
      * Post模板的结构化数据模板
      * @var string
@@ -295,13 +301,13 @@ class PostService
         return $this;
     }
 
-    public function setEditorName()
+    public function setEditorInfo()
     {
-        $editorInfo = Editor::query()->select('editor_name')->find($this->editor_id);
+        $editorInfo = Editor::query()->select('editor_name','editor_avatar')->find($this->editor_id);
         if( !$editorInfo ){
             throw new \Exception('未找到作者信息');
         }
-        $this->editor_name = $editorInfo->lang_name;
+        $this->editor_info = $editorInfo;
         return $this;
     }
 
@@ -484,12 +490,12 @@ class PostService
 
     /**
      * 保存新建文章的数据以及属性
-     * @return bool
+     * @return object
      */
     public function create()
     {
         DB::beginTransaction();
-        Post::create([
+        $this->postObj = Post::create([
             'title' => $this->title,
             'keywords' => $this->keywords,
             'description' => $this->description,
@@ -513,7 +519,7 @@ class PostService
         $postAttr = PostAttr::insert($this->attr);
         !$postAttr and DB::rollBack();
         DB::commit();
-        return true;
+        return $this;
     }
 
     public function generateHtmlFile()
@@ -525,19 +531,38 @@ class PostService
         //5.生成文件图片会加lazyload的效果
         //6.文章属性的标签显示不同的语言
 
-
         //模板中需要替换的变量
         $replaceVarArr = [
             '{{language}}' => $this->getArticleLang(),
-            '{{title}}' => html_entity_decode($this->title),
-            '{{description}}' => html_entity_decode($this->description),
-            '{{keywords}}' => html_entity_decode($this->keywords),
-            '{{editor-name}}' => $this->editor_name,
+            '{{title}}' => $this->title,
+            '{{description}}' => $this->description,
+            '{{keywords}}' => $this->keywords,
+            '{{editor-name}}' => ($this->editor_info)->editor_name,
             '{{html-fullpath}}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->html_fullpath,
             '<!--{{amp-html-path}}-->' => $this->getAmpHtmlPath(),
-            '<!--{{structrued-data}}-->' => html_entity_decode($this->structured_data),
-            '<!--{{ga-code-url}}-->' => $this->getGaUrl(),
+            '<!--{{structrued-data}}-->' => $this->structured_data,
+            '<!--{{ga-code-url}}-->' => $this->getEditorAttr('ga_code_url'),
+            '{{directory-fullpath}}' => $this->directory_fullpath.'/',
+            '{{directory-title}}' => $this->getDirectoryTitle($this->directory_fullpath),
+            '{{summary}}' => $this->summary,
+            '{{editor-twitter-url}}' => $this->getEditorAttr('twitter_url'),
+            '{{editor-url}}' => $this->getEditorAttr('editor_url'),
+            '{{editor-avatar}}' => ($this->editor_info)->editor_avatar,
+            '{{updated-at}}' => $this->getUpdatedAt(),
+            '{{read-time}}' => $this->getPostAttr('read_time'),
+            '<!--{{quick-search}}-->' => $this->attr?($this->attr)['quick_search']:'',
+            '{{post-id}}' => $this->id??($this->postObj)->id,
+            '{{contents}}' => htmlspecialchars_decode($this->contents),
+            '<!--{{next-page}}-->' => $this->getPostAttr('next_page'),
+            '{{html-pathname}}' => $this->html_fullpath,
+            '<!--{{related-articles}}-->' => $this->related_posts,
+            '<!--{{popular-articles}}-->' => $this->getPostAttr('popular_articles'),
+            '<!--{{comment-system}}-->' => '',
+            '{{date-year}}' => date('Y',time()),
         ];
+        //获取post amp模板内容
+        $tempInfo = Template::query()->select('file_path')->find(1)->toArray();
+        //public_path('uploads')
     }
 
     /**
@@ -562,6 +587,68 @@ class PostService
         }else{
             return '';
         }
+    }
+
+    /**
+     * 获取文章作者属性
+     * @return \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Model|object
+     * @throws \Exception
+     */
+    public function getEditorAttr( $attrName = '' )
+    {
+        $attr = EditorAttr::query()->where('editor_id',$this->editor_id)->where('key','=',$attrName)->select('value')->first();
+        if( !$attr ){
+            throw new \Exception('未找到作者属性');
+        }
+        return $attr;
+    }
+
+    /**
+     * 根据语言生成相应时间格式并返回
+     * @return false|string
+     * @throws \Exception
+     */
+    public function getUpdatedAt()
+    {
+        $timeStamp = $this->updated_at??time();
+        switch ($this->getArticleLang()){
+            case 'de':
+            case 'it':
+                return date('d.m.Y',$timeStamp);
+            case 'es':
+            case 'fr':
+            case 'pt':
+                return date('d/m/Y',$timeStamp);
+            case 'cn':
+            case 'tw':
+            case 'jp':
+            case 'ja':
+                return date('Y年m月d日',$timeStamp);
+            default:
+                return date('F j,Y',$timeStamp);
+        }
+    }
+
+    /**
+     * 获取指定的文章属性值
+     * @param string $attrKey 文章属性键名
+     * @return mixed|string
+     */
+    public function getPostAttr( $attrKey = '' )
+    {
+        $attrArr = PostAttr::query()->where('post_htmlpath','=',$this->html_fullpath)->select('post_key','post_value')->get()->toArray();
+        foreach ($attrArr as $item) {
+            if( $attrArr == $item['post_key'] ){
+                return $item['post_value'];
+            }else{
+                return '';
+            }
+        }
+    }
+
+    public function getFaceBookCommentPlugin()
+    {
+
     }
 
 
