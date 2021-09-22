@@ -43,10 +43,15 @@ class PostService
      */
     protected $directory_fullpath;
     /**
-     * 页面文件路径
+     * post页面文件路径
      * @var string
      */
     protected $html_fullpath;
+    /**
+     * amp页面文件路径
+     * @var string
+     */
+    protected $amp_fullpath;
     /**
      * 页面文件名称
      * @var string
@@ -265,6 +270,12 @@ class PostService
         return $this;
     }
 
+    public function setAmpFullPath( $htmlName = '' )
+    {
+        $this->amp_fullpath = $this->directory_fullpath.'/'.$htmlName.'.amp'.self::fileExt;
+        return $this;
+    }
+
     public function setSummary( $summary = '' )
     {
         $this->summary = htmlentities($summary);
@@ -386,7 +397,7 @@ class PostService
             '{<created_at>}' => !is_null($this->created_at) ? $this->created_at : date('F j, Y', time()),
             '{<published_at>}' => !is_null($this->published_at) ? $this->published_at : date('F j, Y', time()),
             '{<updated_at>}' => !is_null($this->updated_at) ? $this->updated_at : date('F j, Y', time()),
-            '{<editor_name>}' => $this->editor_name,
+            '{<editor_name>}' => ($this->editor_info)->editor_name,
             '{<directory_title>}' => $this->getDirectoryTitle($this->directory_fullpath),
             '{<directory_fullpath>}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->directory_fullpath.'/',
         ];
@@ -416,10 +427,10 @@ class PostService
             if( $item['_remove_'] == 1 ){
                 continue;
             }
-            $postAttr[$i ]['post_htmlpath'] = $this->html_fullpath;
-            $postAttr[$i ]['post_key'] = $item['post_attr'];
-            $postAttr[$i ]['post_value'] = htmlentities($item['post_attr_value']);
-            $postAttr[$i ]['post_html'] = 1;
+            $postAttr[$i]['post_htmlpath'] = $this->html_fullpath;
+            $postAttr[$i]['post_key'] = $item['post_attr'];
+            $postAttr[$i]['post_value'] = htmlentities($item['post_attr_value']);
+            $postAttr[$i]['post_html'] = 1;
             $i++;
         }
         $this->attr = $postAttr;
@@ -467,105 +478,6 @@ class PostService
     }
 
     /**
-     * 匹配内容中指定的元素集合
-     * @param string $content html内容字符串
-     * @param string $query 需要匹配的字符串 例如//script[@type="application/ld+json"]
-     * @return array
-     */
-    public function matchElementInContent( $content = '',$query = '' )
-    {
-        $dom  = new \DOMDocument();
-        libxml_use_internal_errors( 1 );
-        $dom->loadHTML( $content );
-
-        $xpath = new \DOMXpath( $dom );
-        $jsonScripts = $xpath->query($query);
-        $arr = [];
-        for ($i = 0;$i < $jsonScripts->length; $i++){
-            //图片地址需要使用绝对路径
-            $arr[] =  Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$jsonScripts[$i]->nodeValue;
-        }
-        return $arr;
-    }
-
-    /**
-     * 保存新建文章的数据以及属性
-     * @return object
-     */
-    public function create()
-    {
-        DB::beginTransaction();
-        $this->postObj = Post::create([
-            'title' => $this->title,
-            'keywords' => $this->keywords,
-            'description' => $this->description,
-            'directory_fullpath' => $this->directory_fullpath,
-            'html_fullpath' => $this->html_fullpath,
-            'html_name' => $this->html_name,
-            'summary' => $this->summary,
-            'contents' => $this->contents,
-            'template_id' => $this->template_id,
-            'template_amp_id' => $this->template_amp_id,
-            'post_status' => 0,//默认生成的文件都是未发布状态
-            'editor_json' => $this->editor_json,
-            'editor_id' => $this->editor_id,
-            'lang_id' => $this->lang_id,
-            'related_posts' => $this->related_posts,
-            'published_at' => 0,//生成文章仅为预览模式，上线后再更新发布时间
-            'structured_data' => $this->structured_data,
-            'fb_comment' => $this->fb_comment,
-            'lightbox' => $this->lightbox,
-        ]);
-        $postAttr = PostAttr::insert($this->attr);
-        !$postAttr and DB::rollBack();
-        DB::commit();
-        return $this;
-    }
-
-    public function generateHtmlFile()
-    {
-        //1.生成的html文件有'--tmp'标识为预览文件
-        //2.预览文件不会进入目录的文章列表
-        //3.预览文件禁止搜索引擎抓取
-        //4.生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
-        //5.生成文件图片会加lazyload的效果
-        //6.文章属性的标签显示不同的语言
-
-        //模板中需要替换的变量
-        $replaceVarArr = [
-            '{{language}}' => $this->getArticleLang(),
-            '{{title}}' => $this->title,
-            '{{description}}' => $this->description,
-            '{{keywords}}' => $this->keywords,
-            '{{editor-name}}' => ($this->editor_info)->editor_name,
-            '{{html-fullpath}}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->html_fullpath,
-            '<!--{{amp-html-path}}-->' => $this->getAmpHtmlPath(),
-            '<!--{{structrued-data}}-->' => $this->structured_data,
-            '<!--{{ga-code-url}}-->' => $this->getEditorAttr('ga_code_url'),
-            '{{directory-fullpath}}' => $this->directory_fullpath.'/',
-            '{{directory-title}}' => $this->getDirectoryTitle($this->directory_fullpath),
-            '{{summary}}' => $this->summary,
-            '{{editor-twitter-url}}' => $this->getEditorAttr('twitter_url'),
-            '{{editor-url}}' => $this->getEditorAttr('editor_url'),
-            '{{editor-avatar}}' => ($this->editor_info)->editor_avatar,
-            '{{updated-at}}' => $this->getUpdatedAt(),
-            '{{read-time}}' => $this->getPostAttr('read_time'),
-            '<!--{{quick-search}}-->' => $this->attr?($this->attr)['quick_search']:'',
-            '{{post-id}}' => $this->id??($this->postObj)->id,
-            '{{contents}}' => htmlspecialchars_decode($this->contents),
-            '<!--{{next-page}}-->' => $this->getPostAttr('next_page'),
-            '{{html-pathname}}' => $this->html_fullpath,
-            '<!--{{related-articles}}-->' => $this->related_posts,
-            '<!--{{popular-articles}}-->' => $this->getPostAttr('popular_articles'),
-            '<!--{{comment-system}}-->' => '',
-            '{{date-year}}' => date('Y',time()),
-        ];
-        //获取post amp模板内容
-        $tempInfo = Template::query()->select('file_path')->find(1)->toArray();
-        //public_path('uploads')
-    }
-
-    /**
      * 获取 amphtml 标签内容
      * @return string
      */
@@ -600,7 +512,7 @@ class PostService
         if( !$attr ){
             throw new \Exception('未找到作者属性');
         }
-        return $attr;
+        return $attr->value;
     }
 
     /**
@@ -646,9 +558,266 @@ class PostService
         }
     }
 
+    /**
+     * 获取语言名称
+     * @param int $langId 语言id
+     * @return \Illuminate\Database\Eloquent\HigherOrderBuilderProxy|\Illuminate\Support\HigherOrderCollectionProxy|mixed
+     * @throws \Exception
+     */
+    public function getLangName( $langId = 1 )
+    {
+        $lang = Lang::query()->find($this->lang_id);
+        if( !$lang ){
+            throw new \Exception('未找到语言信息');
+        }
+        return $lang->lang_name;
+    }
+
+    /**
+     * 获取模板的路径
+     * @param int $tempId 模板id
+     * @param int $type 模板类型 1：post模板 2：amp模板
+     * @return \Illuminate\Database\Eloquent\HigherOrderBuilderProxy|\Illuminate\Support\HigherOrderCollectionProxy|mixed
+     * @throws \Exception
+     */
+    public function getTempPath( $tempId = 1, $type = 1 )
+    {
+        $temp = Template::query()->select('file_path')->where('type','=',$type)->find($tempId);
+        if( !$temp ){
+            throw new \Exception('未找到模板信息');
+        }
+        return public_path('uploads').DIRECTORY_SEPARATOR.$temp->file_path;
+    }
+
+    /**
+     * 获取Facebook的插件代码
+     * @return array
+     * @throws \Exception
+     */
     public function getFaceBookCommentPlugin()
     {
+        $facebookCommentConfig = config('facebook.fb_cfg');
+        $lang = $facebookCommentConfig['mapping'][$this->getLangName($this->lang_id)]??'en_US';
+        //该段放置在 </body> 之前
+        $facebook_comment = <<<FACEBOOKSCRIPT
+<div id="fb-root"></div>
+<script>
+var __qt = {
+    apperVisualArea: function(dom) {
+        var windowHeigth = window.screen.height;
+        var isHidden = dom.getBoundingClientRect().top > 0 && dom.getBoundingClientRect().top < windowHeigth;
+        return isHidden;
+    }
+}
+;window.addEventListener("scroll",function () {
+    __qt.apperVisualArea(document.getElementById('fb-comments')) && (function() {
+        (function(d, s, id) {
+          var js, fjs = d.getElementsByTagName(s)[0];
+          if (d.getElementById(id)) return;
+          js = d.createElement(s); js.id = id;
+          js.src = "//connect.facebook.net/{$lang}/sdk.js#xfbml=1&version={$facebookCommentConfig['api_ver']}&appId={$facebookCommentConfig['app_id']}";
+          fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    })();
+});
+</script>
+FACEBOOKSCRIPT;
+        $facebook_replacement = '<div id="fb-comments" class="fb-comments"
+                    data-href="' . $this->html_fullpath . '"
+                    data-order-by="social"
+                    data-width="100%"
+                    data-numposts="8"></div>';
+        return ['</body>' => $facebook_comment . '</body>', '<!--{{comment-system}}-->' => $facebook_replacement,];
+    }
 
+    /**
+     * 获取目录索引的代码
+     * @return array
+     */
+    public function getArticleIndex()
+    {
+        $tocbot_style = '<style>.toc{overflow-y:auto}.toc>.toc-list{overflow:hidden;position:relative}.toc>.toc-list li{list-style:none}.toc-list{margin:0;padding-left:10px}a.toc-link{color:currentColor;height:100%}a.toc-link.is-active-link,a.toc-link:hover{text-decoration:none;font-weight:700}a.toc-link.is-active-link{color:#249efc;position:relative}a.toc-link.is-active-link::before{content:\'\'}.is-collapsible{max-height:1000px;overflow:hidden;transition:all 300ms ease-in-out}.is-collapsed{max-height:0}.is-position-fixed{position:fixed!important;top:0}.toc-link::before{background-color:#eee;content:\' \';height:inherit;left:-10px;margin-top:-1px;position:absolute;width:3px}.is-active-link::before{background-color:#54bc4b}.js-toc .toc-list,.js-toc-box .toc-list{padding-right:10px}.js-toc-box{border:1px solid #249efc;position:fixed;z-index:2009;top:120px;width:202px;background:#fff;-webkit-box-shadow:0 0 3px rgba(3,3,3,.4);-moz-box-shadow:0 0 3px rgba(3,3,3,.4);box-shadow:0 0 3px rgba(3,3,3,.4);-webkit-border-radius:0 3px 3px 0;-moz-border-radius:0 3px 3px 0;border-radius:0 3px 3px 0}.js-toc-box h3{position:relative;cursor:pointer;padding:8px 0 6px 10px;word-break:keep-all;white-space:nowrap;font-size:18px;font-size:1.8rem;background-color:#f8f8f8;margin-bottom: 0;}.js-toc{padding: 10px 0;}.js-toc-box h3::before{content:\'\';vertical-align:middle;display:inline-block;width:22px;height:22px;background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAACu0lEQVRIS62WSaiPURjGfzd0MyYbmRYyLQyRhbBxjRsUxULJkCELlKyRWNmxwl0YyoKiyMI13LsiJRRShiilUJIxcaNHz8m5f+d8/+/g1Fdf3/ee93mn5zmnhd9rFDAIeBB9+x+vE4H3wAs5a7HHDcBRvz8CzgHnget/iTgLWAosA8bbx0agPQB2AnMSzl8a/BJwFficCaAfMA9YZJDhCbsuoC0F+CPKPN6nslwArhhc/wQyH1jidjTixL6ygG2A6r7QEbcmopWjuCWxyVdAFenwPKh6WpWA+qnVC1jlfqhcAzMl/WAQ9f0U0G07takIsNH/OOBI1G8Ftgl4nAnknwHlNx6wX2WqmOQiwPvAM+AEcCZy2gxwATAb2ONK1C6pADU8WjfsQIOQA1wObI3KvQO4U9LDEcA2O+kbpiwDqGx2O7gvwHFgS2mGoYpTAEV/DHieAZwO3AL2uwVSK62iHh4AJgAHTfYQQLMe9nEPNVBFgIHcAlJ2+4CnFT0cBux0CwQqfQ72tYgvuVIPJV1aEnSVNpXhCuAQMNS27cAuV6j2lIYSrgXWeBCUaQpQMig5O2vgoFRFJV0NjHEP39bgoZwHoGBeBBh6+MSgKlmV0uiIWu9nGrASeFPCQ3FLRB5iIKmNnKRKKupcBEba9rZ5+bEEUHvHRuRX/9ZVDM1p81SV0POtlBY5Tc7xUP16CLyKNtbq4WbgJCCJSq1mxA97JIcavMP+kD2AwwaJt/h0DbhXY0plMhmYa9JPaoi2B6B4tBeYkclKkyri69SQGIQLl5xI+mb68qSep9ZNC0FHuEQFo6lWFp1pehr/y06TN8AbPgH9Ewii1GU/unTdDTYph+HfaINK2gQ+ODdF/v4uAhCYDu8/VhVgbCwuhqwXR5r52lfHkE2sSMn46gLGm3v74qTbwHbge5PMe/z+Cejq5x1oGRqVAAAAAElFTkSuQmCC) no-repeat center;-webkit-background-size:contain;background-size:contain;margin-right:4px;position:relative;top:-2px}.js-toc-box .toc-list li{margin:0.66rem 0}.js-toc-box .toc-list li a{font-size:12px;font-size:1.2rem;}.js-toc-box.closed h3::after{content:"➔";-webkit-transform:rotate(90deg);-moz-transform:rotate(90deg);-ms-transform:rotate(90deg);-o-transform:rotate(90deg);transform:rotate(90deg);margin-top:4px}.js-toc-box h3::after{width:22px;height:22px;content:"➔";display:block;margin-right:10px;-webkit-transform:rotate(-90deg);-moz-transform:rotate(-90deg);-ms-transform:rotate(-90deg);-o-transform:rotate(-90deg);transform:rotate(-90deg);position:absolute;top:6px;right:-5px;}.js-toc .toc-list-item:last-child{margin-bottom: 0}.js-toc-box h3 {margin-top: 0;}</style>';
+        $tocbot_script = '<script>!function(e){var t={};function n(o){if(t[o])return t[o].exports;var l=t[o]={i:o,l:!1,exports:{}};return e[o].call(l.exports,l,l.exports,n),l.l=!0,l.exports}n.m=e,n.c=t,n.d=function(e,t,o){n.o(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:o})},n.r=function(e){"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},n.t=function(e,t){if(1&t&&(e=n(e)),8&t)return e;if(4&t&&"object"==typeof e&&e&&e.__esModule)return e;var o=Object.create(null);if(n.r(o),Object.defineProperty(o,"default",{enumerable:!0,value:e}),2&t&&"string"!=typeof e)for(var l in e)n.d(o,l,function(t){return e[t]}.bind(null,l));return o},n.n=function(e){var t=e&&e.__esModule?function(){return e.default}:function(){return e};return n.d(t,"a",t),t},n.o=function(e,t){return Object.prototype.hasOwnProperty.call(e,t)},n.p="",n(n.s=0)}([function(e,t,n){(function(o){var l,r,i;!function(o,s){r=[],l=function(e){"use strict";var t,o,l,r=n(2),i={},s={},c=n(3),a=n(4),u=!!(e&&e.document&&e.document.querySelector&&e.addEventListener);if("undefined"==typeof window&&!u)return;var d=Object.prototype.hasOwnProperty;function f(e,t,n){var o,l;return t||(t=250),function(){var r=n||this,i=+new Date,s=arguments;o&&i<o+t?(clearTimeout(l),l=setTimeout(function(){o=i,e.apply(r,s)},t)):(o=i,e.apply(r,s))}}return s.destroy=function(){if(!i.skipRendering)try{document.querySelector(i.tocSelector).innerHTML=""}catch(e){console.warn("Element not found: "+i.tocSelector)}i.scrollContainer&&document.querySelector(i.scrollContainer)?(document.querySelector(i.scrollContainer).removeEventListener("scroll",this._scrollListener,!1),document.querySelector(i.scrollContainer).removeEventListener("resize",this._scrollListener,!1),t&&document.querySelector(i.scrollContainer).removeEventListener("click",this._clickListener,!1)):(document.removeEventListener("scroll",this._scrollListener,!1),document.removeEventListener("resize",this._scrollListener,!1),t&&document.removeEventListener("click",this._clickListener,!1))},s.init=function(e){if(u&&(i=function(){for(var e={},t=0;t<arguments.length;t++){var n=arguments[t];for(var o in n)d.call(n,o)&&(e[o]=n[o])}return e}(r,e||{}),this.options=i,this.state={},i.scrollSmooth&&(i.duration=i.scrollSmoothDuration,i.offset=i.scrollSmoothOffset,s.scrollSmooth=n(5).initSmoothScrolling(i)),t=c(i),o=a(i),this._buildHtml=t,this._parseContent=o,s.destroy(),null!==(l=o.selectHeadings(i.contentSelector,i.headingSelector)))){var m=o.nestHeadingsArray(l).nest;i.skipRendering||t.render(i.tocSelector,m),this._scrollListener=f(function(e){t.updateToc(l);var n=e&&e.target&&e.target.scrollingElement&&0===e.target.scrollingElement.scrollTop;(e&&(0===e.eventPhase||null===e.currentTarget)||n)&&(t.updateToc(l),i.scrollEndCallback&&i.scrollEndCallback(e))},i.throttleTimeout),this._scrollListener(),i.scrollContainer&&document.querySelector(i.scrollContainer)?(document.querySelector(i.scrollContainer).addEventListener("scroll",this._scrollListener,!1),document.querySelector(i.scrollContainer).addEventListener("resize",this._scrollListener,!1)):(document.addEventListener("scroll",this._scrollListener,!1),document.addEventListener("resize",this._scrollListener,!1));var h=null;return this._clickListener=f(function(e){i.scrollSmooth&&t.disableTocAnimation(e),t.updateToc(l),h&&clearTimeout(h),h=setTimeout(function(){t.enableTocAnimation()},i.scrollSmoothDuration)},i.throttleTimeout),i.scrollContainer&&document.querySelector(i.scrollContainer)?document.querySelector(i.scrollContainer).addEventListener("click",this._clickListener,!1):document.addEventListener("click",this._clickListener,!1),this}},s.refresh=function(e){s.destroy(),s.init(e||this.options)},e.tocbot=s,s}(o),void 0===(i="function"==typeof l?l.apply(t,r):l)||(e.exports=i)}(void 0!==o?o:this.window||this.global)}).call(this,n(1))},function(e,t){var n;n=function(){return this}();try{n=n||Function("return this")()||(0,eval)("this")}catch(e){"object"==typeof window&&(n=window)}e.exports=n},function(e,t){e.exports={tocSelector:".js-toc",contentSelector:".js-toc-content",headingSelector:"h1, h2, h3",ignoreSelector:".js-toc-ignore",hasInnerContainers:!1,linkClass:"toc-link",extraLinkClasses:"",activeLinkClass:"is-active-link",listClass:"toc-list",extraListClasses:"",isCollapsedClass:"is-collapsed",collapsibleClass:"is-collapsible",listItemClass:"toc-list-item",activeListItemClass:"is-active-li",collapseDepth:0,scrollSmooth:!0,scrollSmoothDuration:420,scrollSmoothOffset:0,scrollEndCallback:function(e){},headingsOffset:1,throttleTimeout:50,positionFixedSelector:null,positionFixedClass:"is-position-fixed",fixedSidebarOffset:"auto",includeHtml:!1,onClick:function(e){},orderedList:!0,scrollContainer:null,skipRendering:!1,headingLabelCallback:!1,ignoreHiddenElements:!1,headingObjectCallback:null,basePath:""}},function(e,t){e.exports=function(e){var t=[].forEach,n=[].some,o=document.body,l=!0,r=" ";function i(n,o){var l=o.appendChild(function(n){var o=document.createElement("li"),l=document.createElement("a");e.listItemClass&&o.setAttribute("class",e.listItemClass);e.onClick&&(l.onclick=e.onClick);e.includeHtml&&n.childNodes.length?t.call(n.childNodes,function(e){l.appendChild(e.cloneNode(!0))}):l.textContent=n.textContent;return l.setAttribute("href",e.basePath+"#"+n.id),l.setAttribute("class",e.linkClass+r+"node-name--"+n.nodeName+r+e.extraLinkClasses),o.appendChild(l),o}(n));if(n.children.length){var c=s(n.isCollapsed);n.children.forEach(function(e){i(e,c)}),l.appendChild(c)}}function s(t){var n=e.orderedList?"ol":"ul",o=document.createElement(n),l=e.listClass+r+e.extraListClasses;return t&&(l+=r+e.collapsibleClass,l+=r+e.isCollapsedClass),o.setAttribute("class",l),o}return{enableTocAnimation:function(){l=!0},disableTocAnimation:function(t){var n=t.target||t.srcElement;"string"==typeof n.className&&-1!==n.className.indexOf(e.linkClass)&&(l=!1)},render:function(e,t){var n=s(!1);t.forEach(function(e){i(e,n)});var o=document.querySelector(e);if(null!==o)return o.firstChild&&o.removeChild(o.firstChild),0===t.length?o:o.appendChild(n)},updateToc:function(i){var s;s=e.scrollContainer&&document.querySelector(e.scrollContainer)?document.querySelector(e.scrollContainer).scrollTop:document.documentElement.scrollTop||o.scrollTop,e.positionFixedSelector&&function(){var t;t=e.scrollContainer&&document.querySelector(e.scrollContainer)?document.querySelector(e.scrollContainer).scrollTop:document.documentElement.scrollTop||o.scrollTop;var n=document.querySelector(e.positionFixedSelector);"auto"===e.fixedSidebarOffset&&(e.fixedSidebarOffset=document.querySelector(e.tocSelector).offsetTop),t>e.fixedSidebarOffset?-1===n.className.indexOf(e.positionFixedClass)&&(n.className+=r+e.positionFixedClass):n.className=n.className.split(r+e.positionFixedClass).join("")}();var c,a=i;if(l&&null!==document.querySelector(e.tocSelector)&&a.length>0){n.call(a,function(t,n){return function t(n){var o=0;return n!==document.querySelector(e.contentSelector&&null!=n)&&(o=n.offsetTop,e.hasInnerContainers&&(o+=t(n.offsetParent))),o}(t)>s+e.headingsOffset+10?(c=a[0===n?n:n-1],!0):n===a.length-1?(c=a[a.length-1],!0):void 0});var u=document.querySelector(e.tocSelector).querySelectorAll("."+e.linkClass);t.call(u,function(t){t.className=t.className.split(r+e.activeLinkClass).join("")});var d=document.querySelector(e.tocSelector).querySelectorAll("."+e.listItemClass);t.call(d,function(t){t.className=t.className.split(r+e.activeListItemClass).join("")});var f=document.querySelector(e.tocSelector).querySelector("."+e.linkClass+".node-name--"+c.nodeName+\'[href="\'+e.basePath+"#"+c.id.replace(/([ #;&,.+*~\':"!^$[\]()=>|/@])/g,"\\$1")+\'"]\');-1===f.className.indexOf(e.activeLinkClass)&&(f.className+=r+e.activeLinkClass);var m=f.parentNode;m&&-1===m.className.indexOf(e.activeListItemClass)&&(m.className+=r+e.activeListItemClass);var h=document.querySelector(e.tocSelector).querySelectorAll("."+e.listClass+"."+e.collapsibleClass);t.call(h,function(t){-1===t.className.indexOf(e.isCollapsedClass)&&(t.className+=r+e.isCollapsedClass)}),f.nextSibling&&-1!==f.nextSibling.className.indexOf(e.isCollapsedClass)&&(f.nextSibling.className=f.nextSibling.className.split(r+e.isCollapsedClass).join("")),function t(n){return-1!==n.className.indexOf(e.collapsibleClass)&&-1!==n.className.indexOf(e.isCollapsedClass)?(n.className=n.className.split(r+e.isCollapsedClass).join(""),t(n.parentNode.parentNode)):n}(f.parentNode.parentNode)}}}}},function(e,t){e.exports=function(e){var t=[].reduce;function n(e){return e[e.length-1]}function o(t){if(!(t instanceof window.HTMLElement))return t;if(e.ignoreHiddenElements&&(!t.offsetHeight||!t.offsetParent))return null;var n={id:t.id,children:[],nodeName:t.nodeName,headingLevel:function(e){return+e.nodeName.split("H").join("")}(t),textContent:e.headingLabelCallback?String(e.headingLabelCallback(t.textContent)):t.textContent.trim()};return e.includeHtml&&(n.childNodes=t.childNodes),e.headingObjectCallback?e.headingObjectCallback(n,t):n}return{nestHeadingsArray:function(l){return t.call(l,function(t,l){var r=o(l);return r&&function(t,l){for(var r=o(t),i=r.headingLevel,s=l,c=n(s),a=i-(c?c.headingLevel:0);a>0;)(c=n(s))&&void 0!==c.children&&(s=c.children),a--;i>=e.collapseDepth&&(r.isCollapsed=!0),s.push(r)}(r,t.nest),t},{nest:[]})},selectHeadings:function(t,n){var o=n;e.ignoreSelector&&(o=n.split(",").map(function(t){return t.trim()+":not("+e.ignoreSelector+")"}));try{return document.querySelector(t).querySelectorAll(o)}catch(e){return console.warn("Element not found: "+t),null}}}}},function(e,t){function n(e,t){var n=window.pageYOffset,o={duration:t.duration,offset:t.offset||0,callback:t.callback,easing:t.easing||d},l=document.querySelector(\'[id="\'+decodeURI(e).split("#").join("")+\'"]\'),r=typeof e==="string"?o.offset+(e?l&&l.getBoundingClientRect().top||0:-(document.documentElement.scrollTop||document.body.scrollTop)):e,i=typeof o.duration==="function"?o.duration(r):o.duration,s,c;function a(e){c=e-s;window.scrollTo(0,o.easing(c,n,r,i));if(c<i){requestAnimationFrame(a)}else{u()}}function u(){if(window.scrollTo(0,n+r),"function"==typeof o.callback){o.callback()}}function d(e,t,n,o){return(e/=o/2)<1?n/2*e*e+t:-n/2*(--e*(e-2)-1)+t}requestAnimationFrame(function(e){s=e;a(e)})}t.initSmoothScrolling=function(e){document.documentElement.style;var t=e.duration,o=e.offset,l=location.hash?r(location.href):location.href;function r(e){return e.slice(0,e.lastIndexOf("#"))}!function(){document.body.addEventListener("click",function(i){if(!function(e){return"a"===e.tagName.toLowerCase()&&(e.hash.length>0||"#"===e.href.charAt(e.href.length-1))&&(r(e.href)===l||r(e.href)+"#"===l)}(i.target)||i.target.className.indexOf("no-smooth-scroll")>-1||"#"===i.target.href.charAt(i.target.href.length-2)&&"!"===i.target.href.charAt(i.target.href.length-1)||-1===i.target.className.indexOf(e.linkClass))return;n(i.target.hash,{duration:t,offset:o,callback:function(){!function(e){var t=document.getElementById(e.substring(1));t&&(/^(?:a|select|input|button|textarea)$/i.test(t.tagName)||(t.tabIndex=-1),t.focus())}(i.target.hash)}})},!1)}()}}]);</script>';
+        $tocbot_script .= <<<DOCBOT
+            <script>
+                $(function() {
+                    $('#post-contents-area').find('h2,h3').each(function() {
+                        $(this).attr('id', 'toc.'+Math.random());
+                    });
+                    var toctrans = {en: 'Table of Contents',jp: '目次',de: 'Inhaltsverzeichnis',fr: 'Table des matières',es: 'Tabla de contenido',it: 'Sommario',tw: '目錄'};
+
+                    $('body').append('<div class="js-toc-box">' +
+                     '<h3><span>'+ ((typeof toctrans !== 'undefined' && toctrans[$('html').attr('lang')]) || 'INDEX') +'</span></h3><div class="js-toc"></div>' +
+                     '</div>');
+
+                    var rtop = ($('#header.scrolling').length > 0 ? $('#header.scrolling') : $('#header')).height() + ($('.am-promotion-entry').length > 0 ? $('.am-promotion-entry').height() : 0);
+
+                    tocbot.init({
+                      // Where to render the table of contents.
+                      tocSelector: '.js-toc',
+                      // Where to grab the headings to build the table of contents.
+                      contentSelector: '#post-contents-area',
+                      // Which headings to grab inside of the contentSelector element.
+                      headingSelector: 'h2, h3',
+                      // For headings inside relative or absolute positioned containers within content.
+                      hasInnerContainers: true,
+
+                      collapseDepth: 0,
+                      scrollSmooth: true,
+                      scrollSmoothDuration: 50,
+                      headingsOffset: rtop,
+                      scrollSmoothOffset: -rtop
+                    });
+
+                    $('.js-toc-box > h3').on('click', function() {
+                        var menu = $(this).parent().find('.js-toc');
+
+                        if(menu.is(":visible")) {
+                            menu.parent().addClass('closed').width(62).find('h3>span').hide();
+                            menu.hide();
+                        } else {
+                            menu.parent().removeClass('closed').width(202).find('h3>span').show();
+                            menu.show();
+                        }
+                    });
+                });
+            </script>
+DOCBOT;
+        return ['</body>'=>'</body>' . $tocbot_script,'</head>'=>$tocbot_style . '</head>'];
+    }
+
+    /**
+     * 开启/关闭页面被搜索引擎抓取
+     * @param string $content 页面内容
+     * @param boolean $toggle 开关
+     */
+    public function toggleSEO( $content = '' ,$toggle = false )
+    {
+        $replace = !$toggle ? ['/<meta\s+name="robots"\s+content="index,.*follow,.*all".*\/?>/ismU', '<meta name="robots" content="noindex,nofollow,none"/>'] : ['/<meta\s+name="robots"\s+content="noindex,.*nofollow,.*none".*\/?>/ismU', '<meta name="robots" content="index,follow,all"/>'];
+        preg_replace($replace[0], $replace[1], $content);
+    }
+
+    /**
+     * 匹配内容中指定的元素集合
+     * @param string $content html内容字符串
+     * @param string $query 需要匹配的字符串 例如//script[@type="application/ld+json"]
+     * @return array
+     */
+    public function matchElementInContent( $content = '',$query = '' )
+    {
+        $dom  = new \DOMDocument();
+        libxml_use_internal_errors( 1 );
+        $dom->loadHTML( $content );
+
+        $xpath = new \DOMXpath( $dom );
+        $jsonScripts = $xpath->query($query);
+        $arr = [];
+        for ($i = 0;$i < $jsonScripts->length; $i++){
+            //图片地址需要使用绝对路径
+            $arr[] =  Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$jsonScripts[$i]->nodeValue;
+        }
+        return $arr;
+    }
+
+    /**
+     * 保存新建文章的数据以及属性
+     * @return object
+     */
+    public function create()
+    {
+        DB::beginTransaction();
+        if( Post::query()->where('html_fullpath','=',$this->html_fullpath)->first() ){
+            throw new \Exception('请勿重新创建相同名称的文章');
+        }
+        $this->postObj = Post::create([
+            'title' => $this->title,
+            'keywords' => $this->keywords,
+            'description' => $this->description,
+            'directory_fullpath' => $this->directory_fullpath,
+            'html_fullpath' => $this->html_fullpath,
+            'html_name' => $this->html_name,
+            'summary' => $this->summary,
+            'contents' => $this->contents,
+            'template_id' => $this->template_id,
+            'template_amp_id' => $this->template_amp_id,
+            'post_status' => 0,//默认生成的文件都是未发布状态
+            'editor_json' => $this->editor_json,
+            'editor_id' => $this->editor_id,
+            'lang_id' => $this->lang_id,
+            'related_posts' => $this->related_posts,
+            'published_at' => 0,//生成文章仅为预览模式，上线后再更新发布时间
+            'structured_data' => $this->structured_data,
+            'fb_comment' => $this->fb_comment,
+            'lightbox' => $this->lightbox,
+        ]);
+        if( !empty($this->attr) ){
+            $postAttr = PostAttr::insert($this->attr);
+            !$postAttr and DB::rollBack();
+        }
+        DB::commit();
+        return $this;
+    }
+
+    public function generateHtmlFile()
+    {
+        //1.生成的html文件有'--tmp'标识为预览文件
+        //2.预览文件不会进入目录的文章列表
+        //3.预览文件禁止搜索引擎抓取
+        //4.生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
+        //5.生成文件图片会加lazyload的效果
+        //6.文章属性的标签显示不同的语言
+
+        //模板中需要替换的变量
+        $replaceVarArr = [
+            '{{language}}' => $this->getArticleLang(),
+            '{{title}}' => $this->title,
+            '{{description}}' => $this->description,
+            '{{keywords}}' => $this->keywords,
+            '{{editor-name}}' => ($this->editor_info)->editor_name,
+            '{{html-fullpath}}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->html_fullpath,
+            '<!--{{amp-html-path}}-->' => $this->getAmpHtmlPath(),
+            '<!--{{structrued-data}}-->' => html_entity_decode($this->structured_data),
+            '<!--{{ga-code-url}}-->' => '<script src="'.$this->getEditorAttr('ga_code_url').'"></script>',
+            '{{directory-fullpath}}' => $this->directory_fullpath.'/',
+            '{{directory-title}}' => $this->getDirectoryTitle($this->directory_fullpath),
+            '{{summary}}' => $this->summary,
+            '{{editor-twitter-url}}' => $this->getEditorAttr('twitter_url'),
+            '{{editor-url}}' => $this->getEditorAttr('editor_url'),
+            '{{editor-avatar}}' => ($this->editor_info)->editor_avatar,
+            '{{updated-at}}' => $this->getUpdatedAt(),
+            '{{read-time}}' => $this->getPostAttr('read_time'),
+            '<!--{{quick-search}}-->' => $this->attr?($this->attr)['quick_search']:'',
+            '{{post-id}}' => $this->id??($this->postObj)->id,
+            '{{contents}}' => htmlspecialchars_decode($this->contents),
+            '<!--{{next-page}}-->' => $this->getPostAttr('next_page'),
+            '{{html-pathname}}' => $this->html_fullpath,
+            '<!--{{related-articles}}-->' => $this->related_posts,
+            '<!--{{popular-articles}}-->' => $this->getPostAttr('popular_articles'),
+            '<!--{{comment-system}}-->' => '',
+            '{{date-year}}' => date('Y',time()),
+        ];
+        //获取post amp模板内容
+        $tplPath = $this->getTempPath($this->template_id,1);
+        $amptplPath = $this->getTempPath($this->template_amp_id,2);
+        if( !is_file($tplPath) ){
+            throw new \Exception('未找到POST模板文件');
+        }
+        if( !is_file($amptplPath) ){
+            throw new \Exception('未找到AMP模板文件');
+        }
+        //将模板文件中的标签替换成文章相关内容
+        $tplHtmlContent = strtr(file_get_contents($tplPath),$replaceVarArr);
+        $amptplHtmlContent = strtr(file_get_contents($amptplPath),$replaceVarArr);
+        if( !$tplHtmlContent || !$amptplHtmlContent ){
+            throw new \Exception('文章生成失败');
+        }
+        $tempFilePath = base_path('../').$this->html_fullpath;
+        $ampFilePath = base_path('../').$this->amp_fullpath;
+        if( !file_put_contents($tempFilePath,$tplHtmlContent) || !file_put_contents($ampFilePath,$amptplHtmlContent)){
+            throw new \Exception('文章生成失败');
+        }
+
+        return true;
     }
 
 

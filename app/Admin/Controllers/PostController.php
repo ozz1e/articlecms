@@ -187,8 +187,10 @@ class PostController extends AdminController
                 ->setDirFullPath($data['directory_fullpath'])
                 ->setHtmlName($data['html_name'])
                 ->setHtmlFullPath()
+                ->setAmpFullPath($data['html_name'])
                 ->setSummary($data['summary'])
                 ->setContents($data['contents'])
+                ->setAttr($data['attr']??[])
                 ->setTemplateId($data['template_id'])
                 ->setTemplateAmpId($data['template_amp_id'])
                 ->setEditorId($data['editor_id'])
@@ -200,12 +202,12 @@ class PostController extends AdminController
                 ->setFaceBookComment($data['fb_comment'])
                 ->setLightBox($data['lightbox']);
             array_key_exists('attr',$data) and $article = $article->setAttr($data['attr']);
-            $result = $article->create();
+            $result = $article->create()->generateHtmlFile();
             dd($result);
 
         }catch (\Exception $exception){
             Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
-            return $form->response()->error('文章保存失败');
+            return $form->response()->error($exception->getMessage());
         }
     }
 
