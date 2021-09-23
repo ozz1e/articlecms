@@ -29,6 +29,7 @@ class PostController extends AdminController
     protected function grid()
     {
         return Grid::make(\App\Models\Post::with(['lang','attr']), function (Grid $grid) {
+            $grid->model()->orderBy('id', 'desc');
             $grid->withBorder();
             $grid->addTableClass(['table-text-center']);
             $grid->column('id')->width('50px')->sortable();
@@ -36,7 +37,7 @@ class PostController extends AdminController
 //                return '<a href="/'.$html_fullpath.'" target="_blank">'.$html_fullpath.'</a>';
 //            });
             $grid->column('html_fullpath')->link(function ($value){
-               return admin_url('admin'.$value);
+               return $value;
             })->setAttributes(['class' => 'text-left']);
             $grid->column('attr','作者')->width('150px')->display(function($attr){
                 $tbody = '<div class="table-responsive table-wrapper complex-container table-middle mt-1 table-collapse "><table class="table custom-data-table data-table"><thead><tr><th>属性名</th><th>属性值</th></tr></thead><tbody>';
@@ -200,7 +201,8 @@ class PostController extends AdminController
                 ->setRelatedPosts($data['related_posts'])
                 ->setStructuredData()
                 ->setFaceBookComment($data['fb_comment'])
-                ->setLightBox($data['lightbox']);
+                ->setLightBox($data['lightbox'])
+                ->setArticleIndex($data['article_index']);
             array_key_exists('attr',$data) and $article = $article->setAttr($data['attr']);
             $result = $article->create()->generateHtmlFile();
             dd($result);

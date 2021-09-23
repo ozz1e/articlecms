@@ -143,6 +143,11 @@ class PostService
      */
     protected $lightbox;
     /**
+     * 是否开启页面索引
+     * @var int
+     */
+    protected $article_index;
+    /**
      * 文章属性
      * @var array
      */
@@ -364,7 +369,18 @@ class PostService
 
     public function setRelatedPosts( $relatedPost = '' )
     {
-        $this->related_posts = htmlentities($relatedPost);
+        $pageTitle = $this->getYMALTitle();
+        $result = preg_match_all('/(<a.*>.*<\/a>)/ismU', $relatedPost, $matches);
+        if( $result ){
+            $dl = '<dl id="am-related-articles"><dt>' . $pageTitle . '</dt>';
+            foreach ($matches[1] as $m) {
+                $dl .= '<dd>' . $m . '</dd>';
+            }
+            $dl .= '</dl>';
+            $this->related_posts = htmlentities($dl);
+        }else{
+            $this->related_posts = htmlentities($relatedPost);
+        }
         return $this;
     }
 
@@ -415,6 +431,12 @@ class PostService
     public function setLightBox( $lightBox = 1 )
     {
         $this->lightbox = $lightBox;
+        return $this;
+    }
+
+    public function setArticleIndex( $index = 1 )
+    {
+        $this->article_index = $index;
         return $this;
     }
 
@@ -687,6 +709,36 @@ DOCBOT;
     }
 
     /**
+     * 返回对应语言的[相关文章]的页面显示标题文字
+     * @return string
+     * @throws \Exception
+     */
+    public function getYMALTitle()
+    {
+        $langName = $this->getLangName();
+        switch ( $langName ){
+            case 'en':
+            default:
+                return 'You May Also Like';
+            case 'de':
+                return 'Folgende Artikel könnten Sie auch interessieren';
+            case 'jp':
+            case 'ja':
+                return '人気記事';
+            case 'it':
+                return 'Potrebbe piacerti anche';
+            case 'es':
+                return 'También le puede interesar';
+            case 'fr':
+                return 'Autres Articles Connexes';
+            case 'pt':
+                return 'Você Tambêm Gostar';
+            case 'tw':
+                return '相關閱讀';
+        }
+    }
+
+    /**
      * 开启/关闭页面被搜索引擎抓取
      * @param string $content 页面内容
      * @param boolean $toggle 开关
@@ -694,7 +746,74 @@ DOCBOT;
     public function toggleSEO( $content = '' ,$toggle = false )
     {
         $replace = !$toggle ? ['/<meta\s+name="robots"\s+content="index,.*follow,.*all".*\/?>/ismU', '<meta name="robots" content="noindex,nofollow,none"/>'] : ['/<meta\s+name="robots"\s+content="noindex,.*nofollow,.*none".*\/?>/ismU', '<meta name="robots" content="index,follow,all"/>'];
-        preg_replace($replace[0], $replace[1], $content);
+        return preg_replace($replace[0], $replace[1], $content);
+    }
+
+    public function imgLazyLoad( $content = '' )
+    {
+        //获取页面中的文章内容
+        $result = preg_match("/<!--ART_CONTENT-->(.*)<!--ART_CONTENT-->/imsU", $content, $article);
+        if( $result == 0 ){
+            throw new \Exception('文章内容缺少内容标识符');
+        }
+
+        $regex1 = '/(<a[^>]+>(<img([^>]+)\/?>)<\/a>)/imsU';
+        $result1 = preg_match_all($regex1, $article[1], $matches1);
+        $regex2 = '/(<img([^>]+)\/?>)/imsU';
+        $result2 = preg_match_all($regex2, $article[1], $matches2);
+
+        if( $result1 || $result2 ){
+            //替换带有链接的图片
+            $handledContent = $this->wrapsTagWithImg($result,$matches1[3],$matches1[0]);
+            //不带链接的图片
+            $imgArr = array_diff($matches2[2],$matches1[3]); //alt="uio" height="183" src="/de/articles/images/avatar1.jpg" width="183"
+            $imgWithTagArr = array_diff($matches2[0],$matches1[2]); //<img alt="uio" height="183" src="/de/articles/images/avatar1.jpg" width="183" />
+            //替换不带链接的图片
+            $handledContent = $this->wrapsTagWithImg($handledContent,$imgArr,$imgWithTagArr);
+            return preg_replace("/<!--ART_CONTENT-->(.*)<!--ART_CONTENT-->/imsU",$handledContent,$content);
+        }
+        return $content;
+
+    }
+
+    public function wrapsTagWithImg( $content = '', $imgArr = [], $tagArr = [] )
+    {
+        $handledArr = [];
+        foreach ($imgArr as $key=>$item) {
+            $handledImg = '<a target="_blank" class="artimg" href="';
+            $imgSrc = $this->getPropertyAttrOfTag($item,'src');
+            if( !$imgSrc ){
+                throw new \Exception('图片缺少src属性');
+            }
+            $imgTitle = $this->getPropertyAttrOfTag($item,'alt');
+            if( !$imgTitle ){
+                throw new \Exception('图片缺少alt属性');
+            }
+            $handledImg .= $imgSrc.'" title='.$imgTitle.'">'.$item.' title='.$imgTitle.' class= "lazyload';
+            if( $this->lightbox === 1 ){
+                $handledImg .= ' img-gallery-control" ></a>';
+            }else{
+                $handledImg .= '" ></a>';
+            }
+            $handledArr[] = $handledImg;
+        }
+        $replaceArr = array_merge($tagArr,$handledArr);
+        return strtr($content,$replaceArr);
+    }
+
+    /**
+     * 获取页面标签的属性
+     * @param string $str 包含标签的字符串
+     * @param string $attrName 属性名
+     * @return false|mixed
+     */
+    public function getPropertyAttrOfTag( $str = '', $attrName= '' )
+    {
+        if (preg_match('/' . $attrName . '=("|\')(.*)\1/ismU', $str, $result)) {
+            return $result[2];
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -788,10 +907,10 @@ DOCBOT;
             '{{read-time}}' => $this->getPostAttr('read_time'),
             '<!--{{quick-search}}-->' => $this->attr?($this->attr)['quick_search']:'',
             '{{post-id}}' => $this->id??($this->postObj)->id,
-            '{{contents}}' => htmlspecialchars_decode($this->contents),
+            '{{contents}}' => deCodeHtml($this->contents),
             '<!--{{next-page}}-->' => $this->getPostAttr('next_page'),
             '{{html-pathname}}' => $this->html_fullpath,
-            '<!--{{related-articles}}-->' => $this->related_posts,
+            '<!--{{related-articles}}-->' => html_entity_decode($this->related_posts),
             '<!--{{popular-articles}}-->' => $this->getPostAttr('popular_articles'),
             '<!--{{comment-system}}-->' => '',
             '{{date-year}}' => date('Y',time()),
@@ -805,15 +924,32 @@ DOCBOT;
         if( !is_file($amptplPath) ){
             throw new \Exception('未找到AMP模板文件');
         }
+        //关闭搜索引擎对POST页面的抓取
+        $tplHtmlContent = $this->toggleSEO(file_get_contents($tplPath));
+        if( !$tplHtmlContent ){
+            throw new \Exception('模板文件缺少meta标签');
+        }
+        //开启FaceBook评论后在页面插入相应的代码
+        if( $this->fb_comment == 1 ){
+            $faceBookComment = $this->getFaceBookCommentPlugin();
+            $replaceVarArr = array_merge($replaceVarArr,$faceBookComment);
+        }
+        //开启目录索引后在页面插入相应的代码
+        if( $this->article_index == 1 ){
+            $articleIndex = $this->getArticleIndex();
+            $replaceVarArr = array_merge($replaceVarArr,$articleIndex);
+        }
         //将模板文件中的标签替换成文章相关内容
-        $tplHtmlContent = strtr(file_get_contents($tplPath),$replaceVarArr);
-        $amptplHtmlContent = strtr(file_get_contents($amptplPath),$replaceVarArr);
-        if( !$tplHtmlContent || !$amptplHtmlContent ){
+        $htmlContent = strtr($tplHtmlContent,$replaceVarArr);
+        $ampHtmlContent = strtr(file_get_contents($amptplPath),$replaceVarArr);
+        if( !$htmlContent || !$ampHtmlContent ){
             throw new \Exception('文章生成失败');
         }
+        //对POST类型的文章的图片进行懒加载处理
+        $htmlContent = $this->imgLazyLoad($htmlContent);
         $tempFilePath = base_path('../').$this->html_fullpath;
         $ampFilePath = base_path('../').$this->amp_fullpath;
-        if( !file_put_contents($tempFilePath,$tplHtmlContent) || !file_put_contents($ampFilePath,$amptplHtmlContent)){
+        if( !file_put_contents($tempFilePath,$htmlContent) || !file_put_contents($ampFilePath,$ampHtmlContent)){
             throw new \Exception('文章生成失败');
         }
 
