@@ -779,7 +779,7 @@ DOCBOT;
     public function wrapsTagWithImg( $content = '', $imgArr = [], $tagArr = [] )
     {
         $handledArr = [];
-        foreach ($imgArr as $key=>$item) {
+        foreach ($imgArr as $item) {
             $handledImg = '<a target="_blank" class="artimg" href="';
             $imgSrc = $this->getPropertyAttrOfTag($item,'src');
             if( !$imgSrc ){
@@ -789,15 +789,15 @@ DOCBOT;
             if( !$imgTitle ){
                 throw new \Exception('图片缺少alt属性');
             }
-            $handledImg .= $imgSrc.'" title='.$imgTitle.'">'.$item.' title='.$imgTitle.' class= "lazyload';
+            $handledImg .= $imgSrc.'" title="'.$imgTitle.'"><img '.$item.' title="'.$imgTitle.'" class="lazyload ';
             if( $this->lightbox === 1 ){
-                $handledImg .= ' img-gallery-control" ></a>';
+                $handledImg .= ' img-gallery-control" /></a>';
             }else{
-                $handledImg .= '" ></a>';
+                $handledImg .= '" /></a>';
             }
             $handledArr[] = $handledImg;
         }
-        $replaceArr = array_merge($tagArr,$handledArr);
+        $replaceArr = array_combine($tagArr,$handledArr);
         return strtr($content,$replaceArr);
     }
 
