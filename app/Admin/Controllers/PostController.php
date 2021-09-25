@@ -177,11 +177,17 @@ class PostController extends AdminController
         });
     }
 
+    /**
+     * 执行创建文章
+     * @param PostRequest $request 文章创建请求对象
+     * @param PostService $service 文章创建服务对象
+     * @return \Dcat\Admin\Http\JsonResponse
+     */
     public function createArticle(PostRequest $request,PostService $service)
     {
         $data = $request->post();
         $form = new Form();
-        try{
+           try{
             $article = $service->setTitle($data['title'])
                 ->setKeywords($data['keywords'])
                 ->setDescription($data['description'])
@@ -204,8 +210,8 @@ class PostController extends AdminController
                 ->setLightBox($data['lightbox'])
                 ->setArticleIndex($data['article_index']);
             array_key_exists('attr',$data) and $article = $article->setAttr($data['attr']);
-            $result = $article->create()->generateHtmlFile();
-            dd($result);
+            $article->generateHtmlFile();
+            return $form->response()->success('文章创建成功')->redirect('post');
 
         }catch (\Exception $exception){
             Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');

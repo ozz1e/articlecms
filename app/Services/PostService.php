@@ -764,18 +764,27 @@ DOCBOT;
 
         if( $result1 || $result2 ){
             //替换带有链接的图片
-            $handledContent = $this->wrapsTagWithImg($result,$matches1[3],$matches1[0]);
+            $handledContent = $this->wrapsTagWithImg($content,$matches1[3],$matches1[0]);
             //不带链接的图片
             $imgArr = array_diff($matches2[2],$matches1[3]); //alt="uio" height="183" src="/de/articles/images/avatar1.jpg" width="183"
             $imgWithTagArr = array_diff($matches2[0],$matches1[2]); //<img alt="uio" height="183" src="/de/articles/images/avatar1.jpg" width="183" />
             //替换不带链接的图片
             $handledContent = $this->wrapsTagWithImg($handledContent,$imgArr,$imgWithTagArr);
-            return preg_replace("/<!--ART_CONTENT-->(.*)<!--ART_CONTENT-->/imsU",$handledContent,$content);
+//            return preg_replace("/<!--ART_CONTENT-->(.*)<!--ART_CONTENT-->/imsU",$handledContent,$content);
+            return $handledContent;
         }
         return $content;
 
     }
 
+    /**
+     * 给文章内容的图片外层加上a标签
+     * @param string $content
+     * @param array $imgArr
+     * @param array $tagArr
+     * @return string
+     * @throws \Exception
+     */
     public function wrapsTagWithImg( $content = '', $imgArr = [], $tagArr = [] )
     {
         $handledArr = [];
@@ -789,7 +798,7 @@ DOCBOT;
             if( !$imgTitle ){
                 throw new \Exception('图片缺少alt属性');
             }
-            $handledImg .= $imgSrc.'" title="'.$imgTitle.'"><img '.$item.' title="'.$imgTitle.'" class="lazyload ';
+            $handledImg .= $imgSrc.'" title="'.$imgTitle.'"><img '.$item.' title="'.$imgTitle.'" class="lazyload';
             if( $this->lightbox === 1 ){
                 $handledImg .= ' img-gallery-control" /></a>';
             }else{
@@ -838,12 +847,17 @@ DOCBOT;
         return $arr;
     }
 
-    /**
-     * 保存新建文章的数据以及属性
-     * @return object
-     */
-    public function create()
+    public function generateHtmlFile()
     {
+        //1.生成的html文件有'--tmp'标识为预览文件
+        //2.预览文件不会进入目录的文章列表
+        //3.预览文件禁止搜索引擎抓取
+        //4.生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
+        //5.生成文件图片会加lazyload的效果
+        //6.文章属性的标签显示不同的语言
+
+
+        //首先将文章数据写入数据库
         DB::beginTransaction();
         if( Post::query()->where('html_fullpath','=',$this->html_fullpath)->first() ){
             throw new \Exception('请勿重新创建相同名称的文章');
@@ -871,20 +885,11 @@ DOCBOT;
         ]);
         if( !empty($this->attr) ){
             $postAttr = PostAttr::insert($this->attr);
-            !$postAttr and DB::rollBack();
+            if( !$postAttr ){
+                DB::rollBack();
+                throw new \Exception('文章属性创建失败');
+            }
         }
-        DB::commit();
-        return $this;
-    }
-
-    public function generateHtmlFile()
-    {
-        //1.生成的html文件有'--tmp'标识为预览文件
-        //2.预览文件不会进入目录的文章列表
-        //3.预览文件禁止搜索引擎抓取
-        //4.生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
-        //5.生成文件图片会加lazyload的效果
-        //6.文章属性的标签显示不同的语言
 
         //模板中需要替换的变量
         $replaceVarArr = [
@@ -919,14 +924,17 @@ DOCBOT;
         $tplPath = $this->getTempPath($this->template_id,1);
         $amptplPath = $this->getTempPath($this->template_amp_id,2);
         if( !is_file($tplPath) ){
+            DB::rollBack();
             throw new \Exception('未找到POST模板文件');
         }
         if( !is_file($amptplPath) ){
+            DB::rollBack();
             throw new \Exception('未找到AMP模板文件');
         }
         //关闭搜索引擎对POST页面的抓取
         $tplHtmlContent = $this->toggleSEO(file_get_contents($tplPath));
         if( !$tplHtmlContent ){
+            DB::rollBack();
             throw new \Exception('模板文件缺少meta标签');
         }
         //开启FaceBook评论后在页面插入相应的代码
@@ -943,6 +951,7 @@ DOCBOT;
         $htmlContent = strtr($tplHtmlContent,$replaceVarArr);
         $ampHtmlContent = strtr(file_get_contents($amptplPath),$replaceVarArr);
         if( !$htmlContent || !$ampHtmlContent ){
+            DB::rollBack();
             throw new \Exception('文章生成失败');
         }
         //对POST类型的文章的图片进行懒加载处理
@@ -950,8 +959,10 @@ DOCBOT;
         $tempFilePath = base_path('../').$this->html_fullpath;
         $ampFilePath = base_path('../').$this->amp_fullpath;
         if( !file_put_contents($tempFilePath,$htmlContent) || !file_put_contents($ampFilePath,$ampHtmlContent)){
+            DB::rollBack();
             throw new \Exception('文章生成失败');
         }
+        DB::commit();
 
         return true;
     }
