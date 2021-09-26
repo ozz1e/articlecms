@@ -708,6 +708,37 @@ DOCBOT;
         return ['</body>'=>'</body>' . $tocbot_script,'</head>'=>$tocbot_style . '</head>'];
     }
 
+    public function includeBlockResource( $content = '' )
+    {
+        $result = preg_match_all('/data-block-name="(.+)"/ismU', $content, $matches);
+        //文章内容没有block的话 则不进行资源引入
+        if( !$result ){
+            return $content;
+        }
+        $css = '';
+        $js = '';
+        foreach(array_unique($matches[1]) as $block_name) {
+            // 获取区块css样式
+            $css_path = public_path('assets/css/post_block/').$block_name.'.css';
+            if( !is_file($css_path) ){
+                throw new \Exception('缺少文章block样式文件'.$block_name);
+            }
+            $_css = file_get_contents($css_path);
+
+            !empty($_css) and $css .= '<style id="post-block-css-'.$block_name.'">'.$_css.'</style>';
+
+            // 获取区块 js 脚本
+            $js_path = public_path('assets/js/post_block/').$block_name.'.js';
+            //个别block需要需要引入js
+            if( is_file($js_path) ){
+                $_js = file_get_contents($js_path);
+                !empty($_js) and $js .= '<script id="post-block-js-'.$block_name.'">'.$_js.'</script>';
+            }
+        }
+        return strtr($content,['</head>'=>$css.PHP_EOL.'</head>','</body>'=>'</body>'.PHP_EOL.$js]);
+
+    }
+
     /**
      * 返回对应语言的[相关文章]的页面显示标题文字
      * @return string
@@ -956,6 +987,8 @@ DOCBOT;
         }
         //对POST类型的文章的图片进行懒加载处理
         $htmlContent = $this->imgLazyLoad($htmlContent);
+        //html文件中引入文章block相关资源
+        $htmlContent = $this->includeBlockResource($htmlContent);
         $tempFilePath = base_path('../').$this->html_fullpath;
         $ampFilePath = base_path('../').$this->amp_fullpath;
         if( !file_put_contents($tempFilePath,$htmlContent) || !file_put_contents($ampFilePath,$ampHtmlContent)){
