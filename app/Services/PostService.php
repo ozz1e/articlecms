@@ -572,7 +572,7 @@ class PostService
     {
         $attrArr = PostAttr::query()->where('post_htmlpath','=',$this->html_fullpath)->select('post_key','post_value')->get()->toArray();
         foreach ($attrArr as $item) {
-            if( $attrArr == $item['post_key'] ){
+            if( $attrKey == $item['post_key'] ){
                 return $item['post_value'];
             }else{
                 return '';
@@ -708,35 +708,19 @@ DOCBOT;
         return ['</body>'=>'</body>' . $tocbot_script,'</head>'=>$tocbot_style . '</head>'];
     }
 
-    public function includeBlockResource( $content = '' )
+    /**
+     * 获取页面标签的属性
+     * @param string $str 包含标签的字符串
+     * @param string $attrName 属性名
+     * @return false|mixed
+     */
+    public function getPropertyAttrOfTag( $str = '', $attrName= '' )
     {
-        $result = preg_match_all('/data-block-name="(.+)"/ismU', $content, $matches);
-        //文章内容没有block的话 则不进行资源引入
-        if( !$result ){
-            return $content;
+        if (preg_match('/' . $attrName . '=("|\')(.*)\1/ismU', $str, $result)) {
+            return $result[2];
+        } else {
+            return false;
         }
-        $css = '';
-        $js = '';
-        foreach(array_unique($matches[1]) as $block_name) {
-            // 获取区块css样式
-            $css_path = public_path('assets/css/post_block/').$block_name.'.css';
-            if( !is_file($css_path) ){
-                throw new \Exception('缺少文章block样式文件'.$block_name);
-            }
-            $_css = file_get_contents($css_path);
-
-            !empty($_css) and $css .= '<style id="post-block-css-'.$block_name.'">'.$_css.'</style>';
-
-            // 获取区块 js 脚本
-            $js_path = public_path('assets/js/post_block/').$block_name.'.js';
-            //个别block需要需要引入js
-            if( is_file($js_path) ){
-                $_js = file_get_contents($js_path);
-                !empty($_js) and $js .= '<script id="post-block-js-'.$block_name.'">'.$_js.'</script>';
-            }
-        }
-        return strtr($content,['</head>'=>$css.PHP_EOL.'</head>','</body>'=>'</body>'.PHP_EOL.$js]);
-
     }
 
     /**
@@ -767,6 +751,128 @@ DOCBOT;
             case 'tw':
                 return '相關閱讀';
         }
+    }
+
+    /**
+     * 生成文章需要的阅读时间
+     * @param string $content 文章内容
+     * @param string $lang 语言
+     * @return string
+     */
+    public function getReadTime( $content,$lang )
+    {
+        $wordcount = round(str_word_count(strip_tags($content)), -2);
+        $minutes = ceil($wordcount / 300);
+
+        if ($wordcount <= 265) {
+            $_out = 1;
+        } else {
+            $_out = $minutes;
+        }
+
+        switch($lang) {
+            case 'en':
+                $output = $_out.' minutes read';
+                break;
+            case 'de':
+                $output = $_out.' Min. Lesezeit';
+                break;
+            case 'fr':
+                $output = $_out.' minutes pour lire';
+                break;
+            case 'jp':
+                $output = $_out.'分くらいかかる';
+                break;
+            case 'it':
+                $output = $_out.' minuti per la lettura';
+                break;
+            case 'es':
+                $output = $_out.' minutos para leer';
+                break;
+            case 'tw':
+                $output = '閱讀本文需要'.$_out.'分鐘';
+                break;
+            default:
+                $output = $_out.' minutes read';
+        }
+
+        return $output;
+    }
+
+    /**
+     * 翻译热门文章的标题以及处理图片的属性
+     * @param string $content 热门文章的html内容
+     * @return array|string|string[]|null
+     * @throws \Exception
+     */
+    public function handlePopularArticles( $content = '' )
+    {
+        switch($this->getLangName($this->lang_id)) {
+            case 'en':
+                $title = 'Popular Articles';
+                break;
+            case 'de':
+                $title = 'Was ist bei anderen beliebt?';
+                break;
+            case 'fr':
+                $title = 'Articles populaires';
+                break;
+            case 'jp':
+                $title = '人気記事';
+                break;
+            case 'it':
+                $title = 'Cosa è popolare tra gli altri?';
+                break;
+            case 'es':
+                $title = 'Los más vistos';
+                break;
+            case 'tw':
+                $title = '熱門文章';
+                break;
+            default:
+                $title = 'Popular Articles';
+        }
+
+        $popular_articles_html = preg_replace('/<img\s*(src="[^">]+")(style="[^"]+")?[^>]*>/ismU', '<img \1 width="300" height="200">', $content);
+        return preg_replace('/<div class="xl-may">[^<]*<ul>/ismU', '<div class="xl-may"><h3>'.$title.'</h3><ul>', $popular_articles_html);
+
+    }
+
+    /**
+     * 文章html引入block需要的css和js资源
+     * @param string $content 文章内容
+     * @return mixed|string
+     * @throws \Exception
+     */
+    public function includeBlockResource( $content = '' )
+    {
+        $result = preg_match_all('/data-block-name="(.+)"/ismU', $content, $matches);
+        //文章内容没有block的话 则不进行资源引入
+        if( !$result ){
+            return $content;
+        }
+        $css = '';
+        $js = '';
+        foreach(array_unique($matches[1]) as $block_name) {
+            // 获取区块css样式
+            $css_path = public_path('assets/css/post_block/').$block_name.'.css';
+            if( !is_file($css_path) ){
+                throw new \Exception('缺少文章block样式文件'.$block_name);
+            }
+            $_css = file_get_contents($css_path);
+
+            !empty($_css) and $css .= '<style id="post-block-css-'.$block_name.'">'.$_css.'</style>';
+
+            // 获取区块 js 脚本
+            $js_path = public_path('assets/js/post_block/').$block_name.'.js';
+            //个别block需要需要引入js
+            if( is_file($js_path) ){
+                $_js = file_get_contents($js_path);
+                !empty($_js) and $js .= '<script id="post-block-js-'.$block_name.'">'.$_js.'</script>';
+            }
+        }
+        return strtr($content,['</head>'=>$css.PHP_EOL.'</head>','</body>'=>'</body>'.PHP_EOL.$js]);
+
     }
 
     /**
@@ -801,7 +907,6 @@ DOCBOT;
             $imgWithTagArr = array_diff($matches2[0],$matches1[2]); //<img alt="uio" height="183" src="/de/articles/images/avatar1.jpg" width="183" />
             //替换不带链接的图片
             $handledContent = $this->wrapsTagWithImg($handledContent,$imgArr,$imgWithTagArr);
-//            return preg_replace("/<!--ART_CONTENT-->(.*)<!--ART_CONTENT-->/imsU",$handledContent,$content);
             return $handledContent;
         }
         return $content;
@@ -825,10 +930,8 @@ DOCBOT;
             if( !$imgSrc ){
                 throw new \Exception('图片缺少src属性');
             }
-            $imgTitle = $this->getPropertyAttrOfTag($item,'alt');
-            if( !$imgTitle ){
-                throw new \Exception('图片缺少alt属性');
-            }
+            $imgTitle = $this->getPropertyAttrOfTag($item,'alt')?:'';
+
             $handledImg .= $imgSrc.'" title="'.$imgTitle.'"><img '.$item.' title="'.$imgTitle.'" class="lazyload';
             if( $this->lightbox === 1 ){
                 $handledImg .= ' img-gallery-control" /></a>';
@@ -841,20 +944,6 @@ DOCBOT;
         return strtr($content,$replaceArr);
     }
 
-    /**
-     * 获取页面标签的属性
-     * @param string $str 包含标签的字符串
-     * @param string $attrName 属性名
-     * @return false|mixed
-     */
-    public function getPropertyAttrOfTag( $str = '', $attrName= '' )
-    {
-        if (preg_match('/' . $attrName . '=("|\')(.*)\1/ismU', $str, $result)) {
-            return $result[2];
-        } else {
-            return false;
-        }
-    }
 
     /**
      * 匹配内容中指定的元素集合
@@ -940,14 +1029,14 @@ DOCBOT;
             '{{editor-url}}' => $this->getEditorAttr('editor_url'),
             '{{editor-avatar}}' => ($this->editor_info)->editor_avatar,
             '{{updated-at}}' => $this->getUpdatedAt(),
-            '{{read-time}}' => $this->getPostAttr('read_time'),
-            '<!--{{quick-search}}-->' => $this->attr?($this->attr)['quick_search']:'',
+            '{{read-time}}' => !empty(($this->attr)['read_time'])?:$this->getReadTime($this->contents,$this->getLangName($this->lang_id)),//如果没有填写阅读时间则系统自动生成
+            '<!--{{quick-search}}-->' => !empty(($this->attr)['quick_search'])?html_entity_decode(($this->attr)['quick_search']):'',
             '{{post-id}}' => $this->id??($this->postObj)->id,
             '{{contents}}' => deCodeHtml($this->contents),
-            '<!--{{next-page}}-->' => $this->getPostAttr('next_page'),
+            '<!--{{next-page}}-->' => !empty(($this->attr)['next_page'])?html_entity_decode(($this->attr)['next_page']):'',
             '{{html-pathname}}' => $this->html_fullpath,
             '<!--{{related-articles}}-->' => html_entity_decode($this->related_posts),
-            '<!--{{popular-articles}}-->' => $this->getPostAttr('popular_articles'),
+            '<!--{{popular-articles}}-->' => !empty(($this->attr)['popular_articles'])?$this->handlePopularArticles(($this->attr)['popular_articles']):'',
             '<!--{{comment-system}}-->' => '',
             '{{date-year}}' => date('Y',time()),
         ];

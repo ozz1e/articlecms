@@ -100,7 +100,7 @@ class PostController extends AdminController
                 admin_css(["assets/css/postAttr.css"]);
                 $form->table('attr', function (Form\NestedForm $table) {
                     //$table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover','next_page','popular_articles','quick_search','read_time','summary_articles','publish_date']);
-                    $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover'=>'cover','next_page'=>'next_page','popular_articles'=>'popular_articles','quick_search'=>'quick_search','read_time'=>'read_time','summary_articles'=>'summary_articles','publish_date'=>'publish_date']);
+                    $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['next_page'=>'next_page','popular_articles'=>'popular_articles','quick_search'=>'quick_search','publish_date'=>'publish_date']);
                     $table->ckeditor('post_attr_value','属性值')->setElementClass('attr_editor');
                 })->width(11,1)->label('属性');
 
