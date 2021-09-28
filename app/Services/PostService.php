@@ -570,8 +570,7 @@ class PostService
      */
     public function getPostAttr( $attrKey = '' )
     {
-        $attrArr = PostAttr::query()->where('post_htmlpath','=',$this->html_fullpath)->select('post_key','post_value')->get()->toArray();
-        foreach ($attrArr as $item) {
+        foreach ($this->attr as $item) {
             if( $attrKey == $item['post_key'] ){
                 return $item['post_value'];
             }else{
@@ -1029,14 +1028,14 @@ DOCBOT;
             '{{editor-url}}' => $this->getEditorAttr('editor_url'),
             '{{editor-avatar}}' => ($this->editor_info)->editor_avatar,
             '{{updated-at}}' => $this->getUpdatedAt(),
-            '{{read-time}}' => !empty(($this->attr)['read_time'])?:$this->getReadTime($this->contents,$this->getLangName($this->lang_id)),//如果没有填写阅读时间则系统自动生成
-            '<!--{{quick-search}}-->' => !empty(($this->attr)['quick_search'])?html_entity_decode(($this->attr)['quick_search']):'',
+            '{{read-time}}' => !empty($this->getPostAttr('read_time'))?:$this->getReadTime($this->contents,$this->getLangName($this->lang_id)),//如果没有填写阅读时间则系统自动生成
+            '<!--{{quick-search}}-->' => !empty($this->getPostAttr('quick_search'))?html_entity_decode($this->getPostAttr('quick_search')):'',
             '{{post-id}}' => $this->id??($this->postObj)->id,
             '{{contents}}' => deCodeHtml($this->contents),
-            '<!--{{next-page}}-->' => !empty(($this->attr)['next_page'])?html_entity_decode(($this->attr)['next_page']):'',
+            '<!--{{next-page}}-->' => !empty($this->getPostAttr('next_page'))?html_entity_decode($this->getPostAttr('next_page')):'',
             '{{html-pathname}}' => $this->html_fullpath,
             '<!--{{related-articles}}-->' => html_entity_decode($this->related_posts),
-            '<!--{{popular-articles}}-->' => !empty(($this->attr)['popular_articles'])?$this->handlePopularArticles(($this->attr)['popular_articles']):'',
+            '<!--{{popular-articles}}-->' => !empty($this->getPostAttr('popular_articles'))?$this->handlePopularArticles(html_entity_decode($this->getPostAttr('popular_articles'))):'',
             '<!--{{comment-system}}-->' => '',
             '{{date-year}}' => date('Y',time()),
         ];
