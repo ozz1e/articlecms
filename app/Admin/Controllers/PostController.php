@@ -90,8 +90,7 @@ class PostController extends AdminController
      */
     protected function form()
     {
-        return Form::make(new Post(), function (Form $form) {
-
+        return Form::make(Post::with(['attr']), function (Form $form) {
             $form->block(8, function (Form\BlockForm $form) {
                 $form->text('title')->required()->width(11,1);
                 $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html');
@@ -100,8 +99,10 @@ class PostController extends AdminController
                 admin_css(["assets/css/postAttr.css"]);
                 $form->table('attr', function (Form\NestedForm $table) {
                     //$table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['cover','next_page','popular_articles','quick_search','read_time','summary_articles','publish_date']);
-                    $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['next_page'=>'next_page','popular_articles'=>'popular_articles','quick_search'=>'quick_search','publish_date'=>'publish_date']);
-                    $table->ckeditor('post_attr_value','属性值')->setElementClass('attr_editor');
+//                    $table->select('post_attr','属性名')->attribute(['class'=>'col-md-3'])->options(['next_page'=>'next_page','popular_articles'=>'popular_articles','quick_search'=>'quick_search','publish_date'=>'publish_date']);
+//                    $table->ckeditor('post_attr_value','属性值')->setElementClass('attr_editor');
+                    $table->select('post_key','属性名')->attribute(['class'=>'col-md-3'])->options(['next_page'=>'next_page','popular_articles'=>'popular_articles','quick_search'=>'quick_search','publish_date'=>'publish_date']);
+                    $table->ckeditor('post_value','属性值')->setElementClass('attr_editor');
                 })->width(11,1)->label('属性');
 
                 // 显示底部提交按钮
@@ -110,9 +111,16 @@ class PostController extends AdminController
             $form->block(4, function (Form\BlockForm $form) {
                 //Todo 显示当前登录者绑定的作者
                 $form->select('editor_id')->required()->options($this->editorList())->width(9,3);
-                $form->select('directory_fullpath')->required()->options($this->directoryList())->loads(['template_id','template_amp_id'],['post/loadPostList','post/loadAmpList'])->width(9,3);
-                $form->select('template_id')->required()->width(9,3)->default(1);
-                $form->select('template_amp_id')->required()->width(9,3)->default(1,true);
+                if( $form->isEditing() ){
+                    $form->hidden('id');
+                    $form->select('directory_fullpath')->options($this->directoryList())->loads(['template_id','template_amp_id'],['post/loadPostList','post/loadAmpList'])->width(9,3)->disable();
+                    $form->select('template_id')->width(9,3)->default(1)->disable();
+                    $form->select('template_amp_id')->width(9,3)->default(1,true)->disable();
+                }else{
+                    $form->select('directory_fullpath')->required()->options($this->directoryList())->loads(['template_id','template_amp_id'],['post/loadPostList','post/loadAmpList'])->width(9,3);
+                    $form->select('template_id')->required()->width(9,3)->default(1);
+                    $form->select('template_amp_id')->required()->width(9,3)->default(1,true);
+                }
                 $form->textarea('description')->required()->width(9,3);
                 //Todo 建立关键词库
                 $form->tags('keywords')->width(9,3)->required()->help('键入关键词后以英文逗号结束，回车后即可生成');
@@ -171,8 +179,9 @@ class PostController extends AdminController
             if ($form->isCreating()) {
                 $form->action('post/createArticle');
             }
-
-
+            if ($form->isEditing()) {
+                $form->action('post/updateArticle');
+            }
 
         });
     }
@@ -213,6 +222,38 @@ class PostController extends AdminController
             $article->generateHtmlFile();
             return $form->response()->success('文章创建成功')->redirect('post');
 
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error($exception->getMessage());
+        }
+    }
+
+    public function updateArticle(PostRequest $request,PostService $service)
+    {
+        $data = $request->all();
+        $form = new Form();
+        try{
+            $article = $service->setId($data['id'])
+                ->setPostObj()
+                ->setTitle($data['title'])
+                ->setHtmlName($data['html_name'])
+                ->setKeywords($data['keywords'])
+                ->setDescription($data['description'])
+                ->setSummary($data['summary'])
+                ->setContents($data['contents'])
+                ->setAmpFullPath($data['html_name'])
+                ->setAttr($data['attr']??[])
+                ->setEditorId($data['editor_id'])
+                ->setEditorInfo()
+                ->setEditorJson()
+                ->setRelatedPosts($data['related_posts'])
+                ->setStructuredData()
+                ->setFaceBookComment($data['fb_comment'])
+                ->setLightBox($data['lightbox'])
+                ->setArticleIndex($data['article_index']);
+            array_key_exists('attr',$data) and $article = $article->setAttr($data['attr']);
+            $article->generateHtmlFile(2);
+            return $form->response()->success('文章修改成功')->redirect('post');
         }catch (\Exception $exception){
             Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
             return $form->response()->error($exception->getMessage());

@@ -36,7 +36,7 @@ class Post extends Model
 
     public function attr()
     {
-        return $this->hasMany(EditorAttr::class,'editor_id','editor_id');
+        return $this->hasMany(PostAttr::class,'post_htmlpath','html_fullpath');
     }
 
 }

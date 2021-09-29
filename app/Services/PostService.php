@@ -153,7 +153,7 @@ class PostService
      */
     protected $attr;
     /**
-     * 新建文章的对象实例
+     * 文章的对象实例
      * @var object
      */
     protected $postObj;
@@ -369,18 +369,7 @@ class PostService
 
     public function setRelatedPosts( $relatedPost = '' )
     {
-        $pageTitle = $this->getYMALTitle();
-        $result = preg_match_all('/(<a.*>.*<\/a>)/ismU', $relatedPost, $matches);
-        if( $result ){
-            $dl = '<dl id="am-related-articles"><dt>' . $pageTitle . '</dt>';
-            foreach ($matches[1] as $m) {
-                $dl .= '<dd>' . $m . '</dd>';
-            }
-            $dl .= '</dl>';
-            $this->related_posts = htmlentities($dl);
-        }else{
-            $this->related_posts = htmlentities($relatedPost);
-        }
+        $this->related_posts = htmlentities($relatedPost);
         return $this;
     }
 
@@ -404,6 +393,8 @@ class PostService
 
     public function setStructuredData()
     {
+        //文章修改时没有设置directory_fullpath 需要通过文章对象来获取
+        $dirFullPath = $this->directory_fullpath?:$this->postObj->directory_fullpath;
         $jsonArr = [
             '{<title>}' => $this->title,
             '{<url>}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->html_fullpath,
@@ -414,8 +405,8 @@ class PostService
             '{<published_at>}' => !is_null($this->published_at) ? $this->published_at : date('F j, Y', time()),
             '{<updated_at>}' => !is_null($this->updated_at) ? $this->updated_at : date('F j, Y', time()),
             '{<editor_name>}' => ($this->editor_info)->editor_name,
-            '{<directory_title>}' => $this->getDirectoryTitle($this->directory_fullpath),
-            '{<directory_fullpath>}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->directory_fullpath.'/',
+            '{<directory_title>}' => $this->getDirectoryTitle($dirFullPath),
+            '{<directory_fullpath>}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$dirFullPath.'/',
         ];
         $this->structured_json = $jsonArr;
         $this->structured_data = $this->getStructureJson($jsonArr);
@@ -440,6 +431,12 @@ class PostService
         return $this;
     }
 
+    public function setPostObj()
+    {
+        $this->postObj = Post::query()->find($this->id);
+        return $this;
+    }
+
     public function setAttr( $attr = [] )
     {
         $postAttr = [];
@@ -449,9 +446,9 @@ class PostService
             if( $item['_remove_'] == 1 ){
                 continue;
             }
-            $postAttr[$i]['post_htmlpath'] = $this->html_fullpath;
-            $postAttr[$i]['post_key'] = $item['post_attr'];
-            $postAttr[$i]['post_value'] = htmlentities($item['post_attr_value']);
+            $postAttr[$i]['post_htmlpath'] = $this->html_fullpath?:$this->postObj->html_fullpath;
+            $postAttr[$i]['post_key'] = $item['post_key'];
+            $postAttr[$i]['post_value'] = htmlentities($item['post_value']);
             $postAttr[$i]['post_html'] = 1;
             $i++;
         }
@@ -570,13 +567,39 @@ class PostService
      */
     public function getPostAttr( $attrKey = '' )
     {
+        $value = '';
         foreach ($this->attr as $item) {
             if( $attrKey == $item['post_key'] ){
-                return $item['post_value'];
+                $value =  $item['post_value'];
+                break;
             }else{
-                return '';
+                $value = '';
             }
         }
+        return $value;
+    }
+
+    /**
+     * 给相关文章内容跟包裹一层dl标签
+     * @param string $relatedPost 提交的相关文章内容
+     * @return mixed|string
+     * @throws \Exception
+     */
+    public function getRelatedPost( $relatedPost = '' )
+    {
+        $pageTitle = $this->getYMALTitle();
+        $result = preg_match_all('/(<a.*>.*<\/a>)/ismU', html_entity_decode($relatedPost), $matches);
+        if( $result ){
+            $dl = '<dl id="am-related-articles"><dt>' . $pageTitle . '</dt>';
+            foreach ($matches[1] as $m) {
+                $dl .= '<dd>' . $m . '</dd>';
+            }
+            $dl .= '</dl>';
+            $handledContent = $dl;
+        }else{
+            $handledContent = html_entity_decode($relatedPost);
+        }
+        return $handledContent;
     }
 
     /**
@@ -966,19 +989,14 @@ DOCBOT;
         return $arr;
     }
 
-    public function generateHtmlFile()
+    /**
+     * 创建文章的数据
+     * @throws \Exception
+     */
+    public function create()
     {
-        //1.生成的html文件有'--tmp'标识为预览文件
-        //2.预览文件不会进入目录的文章列表
-        //3.预览文件禁止搜索引擎抓取
-        //4.生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
-        //5.生成文件图片会加lazyload的效果
-        //6.文章属性的标签显示不同的语言
-
-
-        //首先将文章数据写入数据库
-        DB::beginTransaction();
         if( Post::query()->where('html_fullpath','=',$this->html_fullpath)->first() ){
+            DB::rollBack();
             throw new \Exception('请勿重新创建相同名称的文章');
         }
         $this->postObj = Post::create([
@@ -1002,13 +1020,54 @@ DOCBOT;
             'fb_comment' => $this->fb_comment,
             'lightbox' => $this->lightbox,
         ]);
-        if( !empty($this->attr) ){
-            $postAttr = PostAttr::insert($this->attr);
-            if( !$postAttr ){
-                DB::rollBack();
-                throw new \Exception('文章属性创建失败');
-            }
+        !empty($this->attr) and PostAttr::insert($this->attr);
+    }
+
+    public function update()
+    {
+        $articleInfo = Post::with(['attr','lang'])->findOrFail($this->id);
+        //由于修改不允许修改目录 post/amp模板 所以需要从数据库拿数据
+        $this->lang_id = $articleInfo->lang_id;
+        $this->html_fullpath = $articleInfo->html_fullpath;
+        $this->directory_fullpath = $articleInfo->directory_fullpath;
+        $this->template_id = $articleInfo->template_id;
+        $this->template_amp_id = $articleInfo->template_amp_id;
+
+        $articleInfo->title = $this->title;
+        $articleInfo->keywords = $this->keywords;
+        $articleInfo->description = $this->description;
+        $articleInfo->summary = $this->summary;
+        $articleInfo->contents = $this->contents;
+        $articleInfo->post_status = 0;
+        $articleInfo->editor_id = $this->editor_id;
+        $articleInfo->editor_json = $this->editor_json;
+        $articleInfo->related_posts = $this->related_posts;
+        $articleInfo->published_at = 0;
+        $articleInfo->structured_data = $this->structured_data;
+        $articleInfo->fb_comment = $this->fb_comment;
+        $articleInfo->lightbox = $this->lightbox;
+        $articleInfo->article_index = $this->article_index;
+        if( !$articleInfo->save() ){
+            DB::rollBack();
+            throw new \Exception('文章修改失败');
         }
+        //文章属性更新采用逻辑为先删除原有的属性 再插入更新的属性
+        PostAttr::query()->where('post_htmlpath','=',$this->html_fullpath)->delete();
+        !empty($this->attr) and PostAttr::insert($this->attr);
+    }
+
+    public function generateHtmlFile( $type = 1 )
+    {
+        //1.新建或修改生成的html文件有'--tmp'标识为预览文件
+        //2.预览文件不会进入目录的文章列表
+        //3.预览文件禁止搜索引擎抓取
+        //4.新建或修改生成的html文件同时会生成一个'.amp.html'结尾的移动端文件
+        //5.生成文件图片会加lazyload的效果
+        //6.文章属性的标签显示不同的语言
+
+        DB::beginTransaction();
+        $type == 1 and $this->create();
+        $type == 2 and $this->update();
 
         //模板中需要替换的变量
         $replaceVarArr = [
@@ -1034,7 +1093,7 @@ DOCBOT;
             '{{contents}}' => deCodeHtml($this->contents),
             '<!--{{next-page}}-->' => !empty($this->getPostAttr('next_page'))?html_entity_decode($this->getPostAttr('next_page')):'',
             '{{html-pathname}}' => $this->html_fullpath,
-            '<!--{{related-articles}}-->' => html_entity_decode($this->related_posts),
+            '<!--{{related-articles}}-->' => $this->getRelatedPost($this->related_posts),
             '<!--{{popular-articles}}-->' => !empty($this->getPostAttr('popular_articles'))?$this->handlePopularArticles(html_entity_decode($this->getPostAttr('popular_articles'))):'',
             '<!--{{comment-system}}-->' => '',
             '{{date-year}}' => date('Y',time()),
@@ -1079,6 +1138,7 @@ DOCBOT;
         $htmlContent = $this->includeBlockResource($htmlContent);
         $tempFilePath = base_path('../').$this->html_fullpath;
         $ampFilePath = base_path('../').$this->amp_fullpath;
+        !is_dir(base_path('../').$this->directory_fullpath) and mkdir(base_path('../').$this->directory_fullpath);
         if( !file_put_contents($tempFilePath,$htmlContent) || !file_put_contents($ampFilePath,$ampHtmlContent)){
             DB::rollBack();
             throw new \Exception('文章生成失败');

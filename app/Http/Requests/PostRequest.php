@@ -41,6 +41,7 @@ class PostRequest extends FormRequest
                     'editor_id'=>'required|numeric|min:1',
                     'fb_comment'=>'integer|between:0,1',
                     'lightbox'=>'integer|between:0,1',
+                    'article_index'=>'integer|between:0,1',
                 ];
             }
             // UPDATE
@@ -52,15 +53,13 @@ class PostRequest extends FormRequest
                     'title'=>'required',
                     'keywords'=>'required',
                     'description'=>'required',
-                    'directory_fullpath'=>'required',
                     'html_name'=>'required',
                     'summary'=>'required',
                     'contents'=>'required',
-                    'template_id'=>'required|numeric|min:1',
-                    'template_amp_id'=>'required|numeric|min:1',
                     'editor_id'=>'required|numeric|min:1',
                     'fb_comment'=>'integer|between:0,1',
                     'lightbox'=>'integer|between:0,1',
+                    'article_index'=>'integer|between:0,1',
                 ];
             }
             case 'GET':
