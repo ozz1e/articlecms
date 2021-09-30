@@ -10,6 +10,7 @@ use App\Models\Post;
 use App\Models\PostBlock;
 use App\Models\Template;
 use App\Services\PostService;
+use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Layout\Content;
@@ -93,8 +94,12 @@ class PostController extends AdminController
         return Form::make(Post::with(['attr']), function (Form $form) {
             $form->block(8, function (Form\BlockForm $form) {
                 $form->text('title')->required()->width(11,1);
-                $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html');
-                $form->ckeditor('contents')->required()->width(11,1)->attribute(['id'=>'normal_mode']);
+                $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html')->customFormat(function (){
+                    return strtr($this->html_name,['--tmp.html'=>'','.html'=>'']);
+                });
+                $form->ckeditor('contents')->required()->width(11,1)->attribute(['id'=>'normal_mode'])->customFormat(function (){
+                    return html_entity_decode(htmlspecialchars_decode($this->contents));
+                });
                 $form->ckeditor('related_posts')->width(11,1)->attribute(['id'=>'plain_mode'])->label('相关文章');
                 admin_css(["assets/css/postAttr.css"]);
                 $form->table('attr', function (Form\NestedForm $table) {
@@ -116,6 +121,24 @@ class PostController extends AdminController
                     $form->select('directory_fullpath')->options($this->directoryList())->loads(['template_id','template_amp_id'],['post/loadPostList','post/loadAmpList'])->width(9,3)->disable();
                     $form->select('template_id')->width(9,3)->default(1)->disable();
                     $form->select('template_amp_id')->width(9,3)->default(1,true)->disable();
+                    //解决在编辑模式下浏览资源时路径错误的未知问题
+                    Admin::script(
+                        <<<JS
+$('#normal_mode').ckeditor({
+filebrowserBrowseUrl: '../../../../../0d958d0af15d73beeec6852c13911a700/ckfinder.html',
+filebrowserFlashBrowseUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/ckfinder.html",
+filebrowserFlashUploadUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=Flash",
+filebrowserImage2BrowseUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/ckfinder.html",
+filebrowserImage2UploadUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=screenshot",
+filebrowserImageBrowseUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/ckfinder.html",
+filebrowserImageUploadUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=screenshot",
+filebrowserUploadUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=Files"
+})
+Dcat.ready(function () {
+   console.log($('.cke_wysiwyg_frame'));
+});
+JS
+                    );
                 }else{
                     $form->select('directory_fullpath')->required()->options($this->directoryList())->loads(['template_id','template_amp_id'],['post/loadPostList','post/loadAmpList'])->width(9,3);
                     $form->select('template_id')->required()->width(9,3)->default(1);
@@ -182,8 +205,8 @@ class PostController extends AdminController
             if ($form->isEditing()) {
                 $form->action('post/updateArticle');
             }
-
         });
+
     }
 
     /**

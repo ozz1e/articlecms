@@ -15,6 +15,29 @@
 
 <script require="@ckeditor" init="{!! $selector !!}">
     $("#normal_mode").ckeditor();
+    $('#plain_mode').ckeditor({
+        editorplaceholder: '输入相关文章（有序号和无序均可）',
+        height: '10em',
+        entities: false,
+        toolbarGroups: [
+            {name: 'document', groups: ['mode', 'document', 'doctools']},
+            {name: 'clipboard', groups: ['clipboard', 'undo']},
+            {name: 'editing', groups: ['find', 'selection', 'spellchecker', 'editing']},
+            {name: 'forms', groups: ['forms']},
+            {name: 'basicstyles', groups: ['basicstyles', 'cleanup']},
+            {name: 'colors', groups: ['colors']},
+            {name: 'paragraph', groups: ['list', 'indent', 'blocks', 'align', 'bidi', 'paragraph']},
+            {name: 'links', groups: ['links']},
+            {name: 'insert', groups: ['insert']},
+            {name: 'styles', groups: ['styles']},
+            {name: 'tools', groups: ['tools']},
+            {name: 'others', groups: ['others']},
+            {name: 'about', groups: ['about']}
+        ],
+
+        removeButtons: 'Cut,Copy,Paste,PasteText,PasteFromWord,Print,Preview,ExportPdf,Save,Templates,Replace,Find,SelectAll,Scayt,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Blockquote,CreateDiv,Image,Flash,Table,HorizontalRule,Smiley,PageBreak,Iframe,Maximize,About,Outdent,Indent,Styles,CopyFormatting,RemoveFormat,NewPage,JustifyBlock,Anchor,ShowBlocks,Format,Font,FontSize',
+
+    });
     $(".field_attr_editor").ckeditor({
         editorplaceholder: '输入相关文章（有序号和无序均可）',
         height:'5em',

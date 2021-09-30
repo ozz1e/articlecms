@@ -443,7 +443,8 @@ class PostService
         $i = 0;
         foreach ($attr as $item) {
             //_remove_=1为移除项
-            if( $item['_remove_'] == 1 ){
+            //键值或内容为空的属性不进行添加
+            if( $item['_remove_'] == 1 ||empty($item['post_key']) || empty($item['post_value'])){
                 continue;
             }
             $postAttr[$i]['post_htmlpath'] = $this->html_fullpath?:$this->postObj->html_fullpath;
