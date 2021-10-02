@@ -6,10 +6,12 @@ use Dcat\Admin\Traits\HasDateTimeFormatter;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Post extends Model
 {
 	use HasDateTimeFormatter;
+    use SoftDeletes;
 
     protected $table = 'post';
 

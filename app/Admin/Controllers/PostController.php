@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Actions\DeletePost;
 use App\Http\Requests\PostRequest;
 use App\Models\Directory;
 use App\Models\Editor;
@@ -81,6 +82,20 @@ class PostController extends AdminController
                 $filter->equal('directory_fullpath')->select($this->directoryList())->width(3);
                 $filter->like('html_name','文件名')->width(3);
             });
+
+            $grid->actions(function (Grid\Displayers\Actions $actions){
+                $actions->disableDelete();
+
+                $id = $actions->row->id;
+                $actions->append(new DeletePost($id));
+            });
+
+            $grid->tools(function ($tools) {
+                $tools->batch(function ($batch) {
+                    $batch->disableDelete();
+                });
+
+            });
         });
     }
 
@@ -97,7 +112,7 @@ class PostController extends AdminController
                 $form->text('html_name')->required()->width(11,1)->placeholder('输入文章 file name，例如 this-is-an-example-file-name-on-05-22-2019.html')->customFormat(function (){
                     return strtr($this->html_name,['--tmp.html'=>'','.html'=>'']);
                 });
-                $form->ckeditor('contents')->required()->width(11,1)->attribute(['id'=>'normal_mode'])->customFormat(function (){
+                $form->ckeditor('contents')->required()->width(11,1)->attribute(['id'=>'normal_mode'])->setFieldClass('include-css')->customFormat(function (){
                     return html_entity_decode(htmlspecialchars_decode($this->contents));
                 });
                 $form->ckeditor('related_posts')->width(11,1)->attribute(['id'=>'plain_mode'])->label('相关文章');
@@ -134,9 +149,6 @@ filebrowserImageBrowseUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/ckf
 filebrowserImageUploadUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=screenshot",
 filebrowserUploadUrl: "../../../../../0d958d0af15d73beeec6852c13911a700/core/connector/php/connector.php?command=QuickUpload&type=Files"
 })
-Dcat.ready(function () {
-   console.log($('.cke_wysiwyg_frame'));
-});
 JS
                     );
                 }else{
@@ -158,7 +170,7 @@ JS
 
                 $form->next(function (Form\BlockForm $form) {
                     $form->title('文章Block');
-                    admin_js(["assets/js/postBlock.js"]);
+//                    admin_js(["assets/js/postBlock.js"]);
                     $form->row(function (Form\Row $form) {
                         $blockList = $this->postBlockList();
                         foreach ($blockList as $key=>$item) {
@@ -251,6 +263,7 @@ JS
         }
     }
 
+
     public function updateArticle(PostRequest $request,PostService $service)
     {
         $data = $request->all();
@@ -280,6 +293,24 @@ JS
         }catch (\Exception $exception){
             Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
             return $form->response()->error($exception->getMessage());
+        }
+    }
+
+    public function deleteArticle(PostService $service)
+    {
+        $form = new Form();
+        $postId = request()->route('id');
+        if( !is_numeric($postId) ){
+            return $form->response()->error('文章信息有误');
+        }
+
+        try{
+            $service->setId($postId)
+                ->delete();
+            return $form->response()->success('删除成功')->redirect('/post');
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $form->response()->error('删除失败');
         }
     }
 

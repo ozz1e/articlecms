@@ -1057,6 +1057,43 @@ DOCBOT;
         !empty($this->attr) and PostAttr::insert($this->attr);
     }
 
+    public function delete()
+    {
+        //1.文章进行软删除
+        //2.html文件不删除，文件名加入'--del'进行标识
+        //3.由于没有删除html文件，所以禁止搜索引擎收录
+
+
+        $post = Post::query()->findOrFail($this->id);
+        $filePath = base_path('../').$post->html_fullpath;
+        if( strpos($post->html_fullpath,'--tmp') ){
+            $postPath = strtr($post->html_fullpath,['--tmp'=>'--del']);
+            $postName = strtr($post->html_name,['--tmp'=>'--del']);
+        }else{
+            $postPath = strtr($post->html_fullpath,['.html'=>'--del.html']);
+            $postName = strtr($post->html_name,['.html'=>'--del.html']);
+        }
+
+        if( is_file($filePath) ){
+            $postContent = file_get_contents($filePath);
+            $this->toggleSEO($postContent);
+        }else{
+            throw new \Exception('文章html文件丢失');
+        }
+
+        rename($filePath, base_path('../').$postPath);
+        //更新文件名和文件路径带有--del标识
+        $post->html_name = $postName;
+        $post->html_fullpath = $postPath;
+        $post->saveOrFail();
+        $post->delete();
+
+
+
+        return true;
+    }
+
+
     public function generateHtmlFile( $type = 1 )
     {
         //1.新建或修改生成的html文件有'--tmp'标识为预览文件
