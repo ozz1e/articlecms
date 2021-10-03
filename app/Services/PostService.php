@@ -1024,6 +1024,10 @@ DOCBOT;
         !empty($this->attr) and PostAttr::insert($this->attr);
     }
 
+    /**
+     * 更新文章
+     * @throws \Exception
+     */
     public function update()
     {
         $articleInfo = Post::with(['attr','lang'])->findOrFail($this->id);
@@ -1057,6 +1061,11 @@ DOCBOT;
         !empty($this->attr) and PostAttr::insert($this->attr);
     }
 
+    /**
+     * 删除文章
+     * @return bool
+     * @throws \Throwable
+     */
     public function delete()
     {
         //1.文章进行软删除
@@ -1092,7 +1101,6 @@ DOCBOT;
 
         return true;
     }
-
 
     public function generateHtmlFile( $type = 1 )
     {

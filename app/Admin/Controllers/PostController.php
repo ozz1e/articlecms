@@ -3,14 +3,15 @@
 namespace App\Admin\Controllers;
 
 use App\Admin\Actions\DeletePost;
+use App\Admin\Actions\ReleasePost;
 use App\Http\Requests\PostRequest;
 use App\Models\Directory;
 use App\Models\Editor;
 use App\Models\Lang;
 use App\Models\Post;
-use App\Models\PostBlock;
 use App\Models\Template;
 use App\Services\PostService;
+use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
@@ -88,14 +89,19 @@ class PostController extends AdminController
 
                 $id = $actions->row->id;
                 $actions->append(new DeletePost($id));
+                if( $actions->row->post_status == 0 ){
+                    $actions->append(new ReleasePost());
+                }
             });
+
+            $grid->disableRowSelector();
 
             $grid->tools(function ($tools) {
                 $tools->batch(function ($batch) {
                     $batch->disableDelete();
                 });
-
             });
+
         });
     }
 
