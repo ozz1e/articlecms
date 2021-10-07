@@ -48,7 +48,7 @@ Route::group([
     $router->get('post/loadAmpList','PostController@loadAmpList');
     $router->get('post/postBlockList','PostController@postBlockList');
     $router->post('post/createArticle','PostController@createArticle');
-    $router->put('post/{id}/updateArticle','PostController@updateArticle');
+    $router->put('post/updateArticle','PostController@updateArticle');
     $router->delete('post/{id}/deleteArticle','PostController@deleteArticle');
     $router->resource('post','PostController');
 });

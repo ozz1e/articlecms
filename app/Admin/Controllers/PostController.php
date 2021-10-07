@@ -2,8 +2,10 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Actions\BatchReplaceTemplate;
 use App\Admin\Actions\DeletePost;
 use App\Admin\Actions\ReleasePost;
+use App\Admin\Actions\TemplateSelect;
 use App\Http\Requests\PostRequest;
 use App\Models\Directory;
 use App\Models\Editor;
@@ -11,7 +13,6 @@ use App\Models\Lang;
 use App\Models\Post;
 use App\Models\Template;
 use App\Services\PostService;
-use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
@@ -31,11 +32,11 @@ class PostController extends AdminController
      */
     protected function grid()
     {
-        return Grid::make(\App\Models\Post::with(['lang','attr']), function (Grid $grid) {
+        return Grid::make(Post::with(['lang','attr']), function (Grid $grid) {
             $grid->model()->orderBy('id', 'desc');
             $grid->withBorder();
             $grid->addTableClass(['table-text-center']);
-            $grid->column('id')->width('50px')->sortable();
+            $grid->column('id')->width('55px')->sortable();
 //            $grid->column('html_fullpath')->display(function ($html_fullpath){
 //                return '<a href="/'.$html_fullpath.'" target="_blank">'.$html_fullpath.'</a>';
 //            });
@@ -94,13 +95,18 @@ class PostController extends AdminController
                 }
             });
 
-            $grid->disableRowSelector();
+//            $grid->disableRowSelector();
+
+            $form = new Form();
+            $form->select('r_t_id','选择模板')->options(['1'=>'first','2'=>'second']);
 
             $grid->tools(function ($tools) {
                 $tools->batch(function ($batch) {
                     $batch->disableDelete();
+                    $batch->add(new BatchReplaceTemplate());
                 });
             });
+            $grid->tools(new TemplateSelect());
 
         });
     }

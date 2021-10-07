@@ -653,8 +653,8 @@ var __qt = {
         var isHidden = dom.getBoundingClientRect().top > 0 && dom.getBoundingClientRect().top < windowHeigth;
         return isHidden;
     }
-}
-;window.addEventListener("scroll",function () {
+};
+window.addEventListener("scroll",function () {
     __qt.apperVisualArea(document.getElementById('fb-comments')) && (function() {
         (function(d, s, id) {
           var js, fjs = d.getElementsByTagName(s)[0];
@@ -1033,7 +1033,18 @@ DOCBOT;
         $articleInfo = Post::with(['attr','lang'])->findOrFail($this->id);
         //由于修改不允许修改目录 post/amp模板 所以需要从数据库拿数据
         $this->lang_id = $articleInfo->lang_id;
-        $this->html_fullpath = $articleInfo->html_fullpath;
+        //如果修改已发布的文章 则需要增加文件名的'--tmp'标识
+        if( $articleInfo->post_status == 1 ){
+            if( is_file( base_path('../').$articleInfo->html_fullpath ) ){
+                $tempPath = strtr($articleInfo->html_fullpath,['.html'=>'--tmp.html']);
+                rename(base_path('../').$articleInfo->html_fullpath,base_path('../').$tempPath);
+                $this->html_fullpath = $tempPath;
+            }else{
+                throw new \Exception('html文件丢失');
+            }
+        }else{
+            $this->html_fullpath = $articleInfo->html_fullpath;
+        }
         $this->directory_fullpath = $articleInfo->directory_fullpath;
         $this->template_id = $articleInfo->template_id;
         $this->template_amp_id = $articleInfo->template_amp_id;
@@ -1042,6 +1053,8 @@ DOCBOT;
         $articleInfo->keywords = $this->keywords;
         $articleInfo->description = $this->description;
         $articleInfo->summary = $this->summary;
+        $articleInfo->html_name = strpos($articleInfo->html_name,'--tmp')?:strtr($articleInfo->html_name,['.html'=>'--tmp.html']);
+        $articleInfo->html_fullpath = strpos($articleInfo->html_fullpath,'--tmp')?:strtr($articleInfo->html_fullpath,['.html'=>'--tmp.html']);
         $articleInfo->contents = $this->contents;
         $articleInfo->post_status = 0;
         $articleInfo->editor_id = $this->editor_id;
@@ -1102,6 +1115,12 @@ DOCBOT;
         return true;
     }
 
+    /**
+     * 创建/更新 时生成html文件
+     * @param int $type 1:创建; 2:更新
+     * @return bool
+     * @throws \Exception
+     */
     public function generateHtmlFile( $type = 1 )
     {
         //1.新建或修改生成的html文件有'--tmp'标识为预览文件
