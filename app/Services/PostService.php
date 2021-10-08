@@ -245,9 +245,9 @@ class PostService
         return $this;
     }
 
-    public function setKeywords( $keywords = '' )
+    public function setKeywords( $keywords = [] )
     {
-        $this->keywords = implode(',',$keywords);
+        $this->keywords = rtrim(implode(',',$keywords),',');
         return $this;
     }
 
@@ -437,6 +437,11 @@ class PostService
         return $this;
     }
 
+    /**
+     * 新增或更新时设置文章的属性
+     * @param array $attr 提交的属性值
+     * @return $this
+     */
     public function setAttr( $attr = [] )
     {
         $postAttr = [];
@@ -455,6 +460,27 @@ class PostService
         }
         $this->attr = $postAttr;
         return $this;
+    }
+
+    /**
+     * 替换模板时设置文章的属性
+     * @param array $arr 从数据库取出的属性值
+     * @return $this
+     */
+    public function setPostAttr( $arr = [] )
+    {
+        $this->attr = $arr;
+        return $this;
+    }
+
+    public function getEditorJson()
+    {
+        return $this->editor_json;
+    }
+
+    public function getStructureData()
+    {
+        return $this->structured_data;
     }
 
     /**
@@ -609,7 +635,7 @@ class PostService
      * @return \Illuminate\Database\Eloquent\HigherOrderBuilderProxy|\Illuminate\Support\HigherOrderCollectionProxy|mixed
      * @throws \Exception
      */
-    public function getLangName( $langId = 1 )
+    public function getLangName()
     {
         $lang = Lang::query()->find($this->lang_id);
         if( !$lang ){
@@ -1174,7 +1200,7 @@ DOCBOT;
             DB::rollBack();
             throw new \Exception('未找到AMP模板文件');
         }
-        //关闭搜索引擎对POST页面的抓取
+        //关闭搜索引擎对POST页面的收录
         $tplHtmlContent = $this->toggleSEO(file_get_contents($tplPath));
         if( !$tplHtmlContent ){
             DB::rollBack();
@@ -1213,5 +1239,85 @@ DOCBOT;
         return true;
     }
 
+    /**
+     * 文章替换模板
+     * @param array $article 文章属性
+     * @param string $tplPath 替换模板的路径
+     * @throws \Exception
+     */
+    public function replaceHtmlFile( $article,$tplPath )
+    {
+        //1.使用数据库的数据进行模板替换
+        //2.替换模板不会影响是否在列表中显示、收录状态以及发布状态
+        //3.替换模板暂时只替换post模板
+        //4.替换模板生成文件的图片依然会加lazyload的效果
+        //5.文章属性的标签显示不同的语言
+
+        //模板中需要替换的变量
+        $replaceVarArr = [
+            '{{language}}' => $this->getArticleLang(),
+            '{{title}}' => $article['title'],
+            '{{description}}' => $article['description'],
+            '{{keywords}}' => $article['keywords'],
+            '{{editor-name}}' => $article['editor']['editor_name'],
+            '{{html-fullpath}}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$article['html_fullpath'],
+            '<!--{{amp-html-path}}-->' => $this->getAmpHtmlPath(),
+            '<!--{{structrued-data}}-->' => html_entity_decode($article['structured_data']),
+            '<!--{{ga-code-url}}-->' => '<script src="'.$this->getEditorAttr('ga_code_url').'"></script>',
+            '{{directory-fullpath}}' => $article['directory_fullpath'].'/',
+            '{{directory-title}}' => $this->getDirectoryTitle($article['directory_fullpath']),
+            '{{summary}}' => $article['summary'],
+            '{{editor-twitter-url}}' => $this->getEditorAttr('twitter_url'),
+            '{{editor-url}}' => $this->getEditorAttr('editor_url'),
+            '{{editor-avatar}}' => $article['editor']['editor_avatar'],
+            '{{updated-at}}' => $this->getUpdatedAt(),
+            '{{read-time}}' => !empty($this->getPostAttr('read_time'))?:$this->getReadTime($article['contents'],$this->getLangName()),//如果没有填写阅读时间则系统自动生成
+            '<!--{{quick-search}}-->' => !empty($this->getPostAttr('quick_search'))?html_entity_decode($this->getPostAttr('quick_search')):'',
+            '{{post-id}}' => $article['id'],
+            '{{contents}}' => deCodeHtml($article['contents']),
+            '<!--{{next-page}}-->' => !empty($this->getPostAttr('next_page'))?html_entity_decode($this->getPostAttr('next_page')):'',
+            '{{html-pathname}}' => $article['html_fullpath'],
+            '<!--{{related-articles}}-->' => $this->getRelatedPost($article['related_posts']),
+            '<!--{{popular-articles}}-->' => !empty($this->getPostAttr('popular_articles'))?$this->handlePopularArticles(html_entity_decode($this->getPostAttr('popular_articles'))):'',
+            '<!--{{comment-system}}-->' => '',
+            '{{date-year}}' => date('Y',time()),
+        ];
+
+        //如果文章状态为待发布 则关闭搜索引擎对文章的收录
+        if( $article['post_status'] != 1 ){
+            $tplHtmlContent = $this->toggleSEO(file_get_contents($tplPath));
+        }else{
+            $tplHtmlContent = file_get_contents($tplPath);
+        }
+        //开启FaceBook评论后在页面插入相应的代码
+        if( $article['fb_comment'] == 1 ){
+            $faceBookComment = $this->getFaceBookCommentPlugin();
+            $replaceVarArr = array_merge($replaceVarArr,$faceBookComment);
+        }
+        //开启目录索引后在页面插入相应的代码
+        if( $article['article_index'] == 1 ){
+            $articleIndex = $this->getArticleIndex();
+            $replaceVarArr = array_merge($replaceVarArr,$articleIndex);
+        }
+        //将模板文件中的标签替换成文章相关内容
+        $htmlContent = strtr($tplHtmlContent,$replaceVarArr);
+        if( !$htmlContent ){
+            throw new \Exception('文章生成失败');
+        }
+        //对POST类型的文章的图片进行懒加载处理
+        $htmlContent = $this->imgLazyLoad($htmlContent);
+        //html文件中引入文章block相关资源
+        $htmlContent = $this->includeBlockResource($htmlContent);
+        $filePath = base_path('../').$article['html_fullpath'];
+        !is_dir(base_path('../').$article['directory_fullpath']) and mkdir(base_path('../').$article['directory_fullpath']);
+        if( !file_put_contents($filePath,$htmlContent) ){
+            throw new \Exception('文章生成失败');
+        }
+    }
+
+    public function replaceArticleEditor()
+    {
+
+    }
 
 }

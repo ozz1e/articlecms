@@ -2,8 +2,10 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Actions\BatchReplaceEditor;
 use App\Admin\Actions\BatchReplaceTemplate;
 use App\Admin\Actions\DeletePost;
+use App\Admin\Actions\EditorSelect;
 use App\Admin\Actions\ReleasePost;
 use App\Admin\Actions\TemplateSelect;
 use App\Http\Requests\PostRequest;
@@ -95,18 +97,15 @@ class PostController extends AdminController
                 }
             });
 
-//            $grid->disableRowSelector();
-
-            $form = new Form();
-            $form->select('r_t_id','选择模板')->options(['1'=>'first','2'=>'second']);
-
             $grid->tools(function ($tools) {
                 $tools->batch(function ($batch) {
                     $batch->disableDelete();
                     $batch->add(new BatchReplaceTemplate());
+                    $batch->add(new BatchReplaceEditor());
                 });
             });
             $grid->tools(new TemplateSelect());
+            $grid->tools(new EditorSelect());
 
         });
     }
