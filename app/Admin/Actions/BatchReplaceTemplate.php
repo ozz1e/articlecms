@@ -13,6 +13,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 文章列表批量替换模板batch-action
+ * Class BatchReplaceTemplate
+ * @package App\Admin\Actions
+ */
 class BatchReplaceTemplate extends BatchAction
 {
     /**

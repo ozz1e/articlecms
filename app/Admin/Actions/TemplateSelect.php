@@ -6,6 +6,11 @@ use App\Models\Template;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Grid\Tools\AbstractTool;
 
+/**
+ * 文章列表工具栏的选择模板的select
+ * Class TemplateSelect
+ * @package App\Admin\Actions
+ */
 class TemplateSelect extends AbstractTool
 {
 

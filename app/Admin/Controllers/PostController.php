@@ -5,8 +5,10 @@ namespace App\Admin\Controllers;
 use App\Admin\Actions\BatchReplaceEditor;
 use App\Admin\Actions\BatchReplaceTemplate;
 use App\Admin\Actions\DeletePost;
+use App\Admin\Actions\DestroyPost;
 use App\Admin\Actions\EditorSelect;
 use App\Admin\Actions\ReleasePost;
+use App\Admin\Actions\RestorePost;
 use App\Admin\Actions\TemplateSelect;
 use App\Http\Requests\PostRequest;
 use App\Models\Directory;
@@ -15,6 +17,7 @@ use App\Models\Lang;
 use App\Models\Post;
 use App\Models\Template;
 use App\Services\PostService;
+use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
@@ -60,10 +63,11 @@ class PostController extends AdminController
             });
             $grid->column('lang.lang_name','语言')->width('60px');
             $grid->column('template_id')->width('180px')->select($this->templateList(),true)->help('选择即可更换文章模板');
-            $grid->column('post_status')->width('95px')->using([0=>'未发布',1=>'已发布'])
+            $grid->column('post_status')->width('95px')->using([0=>'未发布',1=>'已发布',2=>'已删除'])
             ->dot([
-                0=>'danger',
-                1=>'success'
+                0=>'warning',
+                1=>'success',
+                2=>'danger'
             ]);
 
             $grid->column('created_at')->width('210px')->display(function ($created_at){
@@ -85,27 +89,45 @@ class PostController extends AdminController
                 $filter->equal('post_status')->select(['未发布','已发布'])->width(3);
                 $filter->equal('directory_fullpath')->select($this->directoryList())->width(3);
                 $filter->like('html_name','文件名')->width(3);
+
+                // 范围过滤器，调用模型的`onlyTrashed`方法，查询出被软删除的数据。
+                $filter->scope('trashed', '回收站')->onlyTrashed();
             });
 
             $grid->actions(function (Grid\Displayers\Actions $actions){
                 $actions->disableDelete();
-
                 $id = $actions->row->id;
-                $actions->append(new DeletePost($id));
-                if( $actions->row->post_status == 0 ){
-                    $actions->append(new ReleasePost());
+                //回收站列表时行按钮只显示 彻底删除和恢复
+                if( request('_scope_') != 'trashed' ){
+                    $actions->append(new DeletePost($id));
+                    if( $actions->row->post_status == 0 ){
+                        $actions->append(new ReleasePost());
+                    }
+                }else{
+                    $actions->disableEdit();
+                    $actions->append(new RestorePost());
+                    $actions->append(new DestroyPost());
                 }
+
+
             });
 
             $grid->tools(function ($tools) {
                 $tools->batch(function ($batch) {
                     $batch->disableDelete();
-                    $batch->add(new BatchReplaceTemplate());
-                    $batch->add(new BatchReplaceEditor());
+                        $batch->add(new BatchReplaceTemplate());
+                        $batch->add(new BatchReplaceEditor());
                 });
             });
-            $grid->tools(new TemplateSelect());
-            $grid->tools(new EditorSelect());
+
+            //回收站因为权限问题暂时不涉及批量恢复和批量删除
+            if (request('_scope_') != 'trashed') {
+                $grid->tools(new TemplateSelect());
+                $grid->tools(new EditorSelect());
+            }else{
+                $grid->disableRowSelector();
+            }
+
 
         });
     }

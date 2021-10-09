@@ -1110,6 +1110,7 @@ DOCBOT;
         //1.文章进行软删除
         //2.html文件不删除，文件名加入'--del'进行标识
         //3.由于没有删除html文件，所以禁止搜索引擎收录
+        //4.为了兼容以前的逻辑，amp类型文件不加'--del'标识，只禁止收录
 
 
         $post = Post::query()->findOrFail($this->id);
@@ -1117,14 +1118,22 @@ DOCBOT;
         if( strpos($post->html_fullpath,'--tmp') ){
             $postPath = strtr($post->html_fullpath,['--tmp'=>'--del']);
             $postName = strtr($post->html_name,['--tmp'=>'--del']);
+            //之前的文章变动没有为amp类型加标识
+            $ampFilePath = strtr($filePath,['--tmp.html'=>'.amp.html']);
         }else{
             $postPath = strtr($post->html_fullpath,['.html'=>'--del.html']);
             $postName = strtr($post->html_name,['.html'=>'--del.html']);
+            $ampFilePath = strtr($filePath,['.html'=>'.amp.html']);
         }
 
-        if( is_file($filePath) ){
+        if( is_file($filePath) && is_file($ampFilePath) ){
             $postContent = file_get_contents($filePath);
-            $this->toggleSEO($postContent);
+            $ampContent = file_get_contents($ampFilePath);
+            $handlePostContent = $this->toggleSEO($postContent);
+            //amp类型文章禁止收录即可
+            $handleAmpContent = $this->toggleSEO($ampContent);
+            file_put_contents($filePath,$handlePostContent);
+            file_put_contents($ampFilePath,$handleAmpContent);
         }else{
             throw new \Exception('文章html文件丢失');
         }
@@ -1133,10 +1142,9 @@ DOCBOT;
         //更新文件名和文件路径带有--del标识
         $post->html_name = $postName;
         $post->html_fullpath = $postPath;
+        $post->post_status = 2;
         $post->saveOrFail();
         $post->delete();
-
-
 
         return true;
     }
@@ -1240,7 +1248,7 @@ DOCBOT;
     }
 
     /**
-     * 文章替换模板
+     * 文章替换模板/作者
      * @param array $article 文章属性
      * @param string $tplPath 替换模板的路径
      * @throws \Exception

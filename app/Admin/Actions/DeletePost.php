@@ -9,6 +9,11 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
+/**
+ * 文章列表行按钮 删除文章 row-action
+ * Class DeletePost
+ * @package App\Admin\Actions
+ */
 class DeletePost extends Action
 {
     protected $postId;

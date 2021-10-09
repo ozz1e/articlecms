@@ -14,6 +14,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * 文章列表批量替换作者batch-action
+ * Class BatchReplaceEditor
+ * @package App\Admin\Actions
+ */
 class BatchReplaceEditor extends BatchAction
 {
     /**
@@ -53,24 +58,30 @@ class BatchReplaceEditor extends BatchAction
                      $service = $service->setEditorId($requestData['editor_id'])
                          ->setEditorInfo()
                          ->setEditorJson()
-                         ->setTitle($article->title)
-                         ->setHtmlName($article->html_name)
-                         ->setDirFullPath($article->directory_fullpath)
+                         ->setTitle($articleArr['title'])
+                         ->setHtmlName($articleArr['html_name'])
+                         ->setDirFullPath($articleArr['directory_fullpath'])
                          ->setLangId()
-                         ->setKeywords(explode(',',$article->keywords))
+                         ->setKeywords(explode(',',$articleArr['keywords']))
                          ->setDescription($article->description)
-                         ->setContents($article->contents)
+                         ->setContents($articleArr['contents'])
                          ->setPostAttr($articleArr['attr'])
                          ->setStructuredData()
                          ->setCreatedAt($articleArr['created_at'])
                          ->setUpdatedAt($articleArr['updated_at']);
+                     //更新文章的作者信息
                      $article->editor_id = $requestData['editor_id'];
                      $article->editor_json = $service->getEditorJson();
                      $article->structured_data = $service->getStructureData();
                      if( !$article->save() ){
                          return $this->response()->error('ID为'.$item.'的文章替换失败');
                      }
-                     $template = Template::query()->find($article->template_id,'file_path')->toArray();
+                     $template = Template::query()->find($article->template_id,['file_path','lang_id'])->toArray();
+                     //更新信息时模板的语言被修改与原文章的语言不一致
+                     //一般不会出现这种情况 保证健壮加上一层判断
+                     if( $articleArr['lang_id'] != $template['lang_id'] ){
+                         return $this->response()->warning('模板语言与文章语言不一致');
+                     }
                      $templateFilePath = public_path('uploads/').$template['file_path'];
                      if( !is_file($templateFilePath) ){
                          return $this->response()->warning('模板文件丢失');
