@@ -27,6 +27,7 @@ Route::group([
     $router->put('editor/{id}/updateEditor', 'EditorController@updateEditor');
     $router->post('editor/uploadAvatar', 'EditorController@uploadAvatar');
     $router->delete('editor/{id}/deleteEditor','EditorController@deleteEditor');
+    $router->get('usereditor','UserEditorController@index');
     //图片管理
     $router->get('image','ImageController@index');
     //模板管理
