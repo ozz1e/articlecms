@@ -13,6 +13,6 @@ class Roles extends Model
 
     public function user()
     {
-        return $this->belongsToMany(Users::class,'admin_role_users','role_id','user_id');
+        return $this->hasMany(RoleUsers::class,'role_id','id');
     }
 }
