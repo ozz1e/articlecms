@@ -23,6 +23,7 @@ use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Layout\Content;
 use Dcat\Admin\Http\Controllers\AdminController;
+use Dcat\Admin\Widgets\Alert;
 use Dcat\Admin\Widgets\Modal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -162,7 +163,15 @@ class PostController extends AdminController
                 $form->showFooter();
             });
             $form->block(4, function (Form\BlockForm $form) {
-                //Todo 显示当前登录者绑定的作者
+                //如果登录账号未绑定作者 弹出提示信息 不允许继续操作
+                if( empty($this->editorList()) ){
+                    admin_exit(
+                        Content::make()
+                            ->title('文章')
+                            ->description('列表')
+                            ->body(Alert::make('改账号还未绑定，请联系管理绑定！', '提示')->warning())
+                    );
+                }
                 $form->select('editor_id')->required()->options($this->editorList())->width(9,3);
                 if( $form->isEditing() ){
                     $form->hidden('id');
@@ -203,7 +212,6 @@ JS
 
                 $form->next(function (Form\BlockForm $form) {
                     $form->title('文章Block');
-//                    admin_js(["assets/js/postBlock.js"]);
                     $form->row(function (Form\Row $form) {
                         $blockList = $this->postBlockList();
                         foreach ($blockList as $key=>$item) {
@@ -251,7 +259,6 @@ JS
                 $form->action('post/updateArticle');
             }
         });
-
     }
 
     /**
@@ -410,12 +417,20 @@ JS
     }
 
     /**
-     * 获取作者列表api
-     * @return array
+     * 获取当前登录账号绑定的作者列表 api
      */
     public function editorList()
     {
-        return Editor::query()->pluck('editor_name','id')->toArray();
+        //管理员默认显示所有作者
+        //administrator为超级管理员
+        //manager为普通管理员
+        if( Admin::user()->inRoles(['administrator', 'manager']) ){
+            return Editor::query()->pluck('editor_name','id')->toArray();
+        }else{
+            $editorId = DB::table('user_editor')->where('user_id',Admin::user()->id)->pluck('editor_id')->toArray();
+            return Editor::query()->whereIn('id',$editorId)->pluck('editor_name','id')->toArray();
+        }
+
     }
 
     /**
@@ -458,7 +473,7 @@ JS
 
     /**
      * 获取文章block api
-     * @return array
+     * @return \Illuminate\Support\Collection
      */
     public function postBlockList()
     {
