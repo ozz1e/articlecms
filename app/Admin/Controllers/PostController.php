@@ -100,7 +100,15 @@ class PostController extends AdminController
                 $id = $actions->row->id;
                 //回收站列表时行按钮只显示 彻底删除和恢复
                 if( request('_scope_') != 'trashed' ){
-                    $actions->append(new DeletePost($id));
+                    //当登录账号不是管理员也不是文章拥有者时 隐藏编辑按钮
+                    if( !Admin::user()->inRoles(['editor', 'developer']) ){
+                        $postEditor = Post::query()->find($id,'editor_id');
+                        $postUser = DB::table('user_editor')->where('editor_id',$postEditor['editor_id'])->pluck('user_id')->toArray();
+                        if( !in_array(Admin::user()->id,$postUser) ){
+                            $actions->disableEdit();
+                        }
+                    }
+                    $actions->append(new DeletePost());
                     if( $actions->row->post_status == 0 ){
                         $actions->append(new ReleasePost());
                     }

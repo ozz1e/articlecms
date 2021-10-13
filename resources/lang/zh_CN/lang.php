@@ -2,7 +2,8 @@
 
 return [
     'labels' => [
-        'Lang' => '语言',
+        'Lang' => '语言管理',
+        'lang' => '语言管理',
         'list'        => '列表',
         'langlist' => '语言列表',
         'pagination' => [

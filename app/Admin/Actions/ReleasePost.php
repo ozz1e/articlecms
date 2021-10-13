@@ -95,7 +95,8 @@ class ReleasePost extends RowAction
      */
     protected function authorize($user): bool
     {
-        return true;
+        //当登录账号不是管理员也不是文章拥有者时 没有操作权限
+        return checkPostOwner($this->getKey());
     }
 
     /**

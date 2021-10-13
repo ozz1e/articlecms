@@ -2,12 +2,17 @@
 
 namespace App\Admin\Actions;
 
+use App\Models\Post;
+use App\Services\PostService;
 use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Actions\Response;
+use Dcat\Admin\Admin;
 use Dcat\Admin\Traits\HasPermissions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 文章列表行按钮 删除文章 row-action
@@ -16,13 +21,8 @@ use Illuminate\Http\Request;
  */
 class DeletePost extends Action
 {
-    protected $postId;
 
-    public function __construct($id = null)
-    {
-        parent::__construct();
-        $this->postId = $id;
-    }
+    protected $title = '<i class="feather icon-trash"></i> 删除';
 
     /**
      * Handle the action request.
@@ -33,9 +33,20 @@ class DeletePost extends Action
      */
     public function handle(Request $request)
     {
-        // dump($this->getKey());
 
-        return $this->response()->success('Processed successfully.')->redirect('/');
+        if( !is_numeric($this->getKey()) ){
+            return $this->response()->warning('文章信息有误');
+        }
+
+        try{
+            $service = new PostService();
+            $service->setId($this->getKey())
+                ->delete();
+            return $this->response()->success('删除成功')->refresh();
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $this->response()->error('删除失败');
+        }
     }
 
     /**
@@ -43,7 +54,7 @@ class DeletePost extends Action
      */
     public function confirm()
     {
-        // return ['Confirm?', 'contents'];
+         return ['确定删除文章？', '确定将 ID-'.$this->getKey().' 的文章放进回收站？'];
     }
 
     /**
@@ -53,24 +64,9 @@ class DeletePost extends Action
      */
     protected function authorize($user): bool
     {
-        return true;
-    }
+        //当登录账号不是管理员也不是文章拥有者时 没有操作权限
+        return checkPostOwner($this->getKey());
 
-    /**
-     * 设置按钮的HTML，这里我们需要附加上弹窗的HTML
-     *
-     * @return string|void
-     */
-    public function html()
-    {
-        // 按钮的html
-        $html = parent::html();
-        $url = url('admin/post/');
-
-        return <<<HTML
-{$html}
-<a data-url={$url}/{$this->postId}/deleteArticle data-message="确定将 ID-{$this->postId} 的文章放进回收站？" data-action="delete" data-redirect={$url} style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
-HTML;
     }
 
     /**

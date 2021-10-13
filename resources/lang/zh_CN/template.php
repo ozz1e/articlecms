@@ -2,7 +2,8 @@
 
 return [
     'labels' => [
-        'Template' => '模板',
+        'Template' => '模板管理',
+        'template' => '模板管理',
         'list'        => '列表',
         'pagination' => [
             'range' => '从 :first 到 :last ，总共 :total 条',

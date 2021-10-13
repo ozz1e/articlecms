@@ -3,6 +3,7 @@
 return [
     'labels' => [
         'Editor' => '作者管理',
+        'editor' => '作者管理',
         'list'        => '列表',
         'editorlist' => '作者列表',
         'pagination' => [
