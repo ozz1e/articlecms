@@ -21,7 +21,6 @@ class ReleasePost extends RowAction
     /**
      * @return string
      */
-	protected $postId;
 	protected $title = '<i class="feather icon-navigation"></i> 发布';
 
     /**

@@ -2,16 +2,13 @@
 
 namespace App\Admin\Actions;
 
-use App\Models\Post;
 use App\Services\PostService;
-use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Actions\Response;
-use Dcat\Admin\Admin;
+use Dcat\Admin\Grid\RowAction;
 use Dcat\Admin\Traits\HasPermissions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -19,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * Class DeletePost
  * @package App\Admin\Actions
  */
-class DeletePost extends Action
+class DeletePost extends RowAction
 {
 
     protected $title = '<i class="feather icon-trash"></i> 删除';
@@ -33,7 +30,6 @@ class DeletePost extends Action
      */
     public function handle(Request $request)
     {
-
         if( !is_numeric($this->getKey()) ){
             return $this->response()->warning('文章信息有误');
         }

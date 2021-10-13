@@ -41,10 +41,14 @@ if( !function_exists('deCodeHtml')){
     }
 }
 
+/**
+ * 判断当前用户是否有权限操作文章
+ */
 if( !function_exists('checkPostOwner') ){
     function checkPostOwner( $postId = 0 ){
-        if( !Admin::user()->inRoles(['editor', 'developer']) ){
-            $postEditor = Post::query()->find($postId,'editor_id');
+        if( !Admin::user()->inRoles(['administrator', 'manager']) ){
+            //文章涉及到彻底删除和恢复 所以需要withTrashed
+            $postEditor = Post::withTrashed()->find($postId,'editor_id');
             $postUser = DB::table('user_editor')->where('editor_id',$postEditor['editor_id'])->pluck('user_id')->toArray();
             if( !in_array(Admin::user()->id,$postUser) ){
                 return false;
