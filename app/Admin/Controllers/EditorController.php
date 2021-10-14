@@ -259,7 +259,7 @@ class EditorController extends  AdminController
     {
         $disk= $this->disk('admin');
         $file = $this->file();
-        $dir = 'images';
+        $dir = '/assets/images/author';
 
 
         $result = $disk->putFileAs($dir,$file,$file->getClientOriginalName());

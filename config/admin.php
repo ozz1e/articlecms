@@ -11,7 +11,7 @@ return [
     | login page.
     |
     */
-    'name' => 'Dcat Admin',
+    'name' => '文章管理系统',
 
     /*
     |--------------------------------------------------------------------------
@@ -311,7 +311,7 @@ return [
     */
     'layout' => [
         // default, blue, blue-light, green
-        'color' => 'blue-light',
+        'color' => 'default',
 
         // sidebar-separate
         'body_class' => [],
