@@ -17,7 +17,6 @@ use App\Models\Lang;
 use App\Models\Post;
 use App\Models\Template;
 use App\Services\PostService;
-use Dcat\Admin\Actions\Action;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
@@ -30,7 +29,6 @@ use Illuminate\Support\Facades\Log;
 
 class PostController extends AdminController
 {
-    public $test;
     /**
      * Make a grid builder.
      *
@@ -209,6 +207,7 @@ JS
                 $form->textarea('description')->required()->width(9,3);
                 //Todo 建立关键词库
                 $form->tags('keywords')->width(9,3)->required()->help('键入关键词后以英文逗号结束，回车后即可生成');
+                $form->tags('post_function')->width(9,3)->required()->help('键入功能后以英文逗号结束，回车后即可生成');
                 $form->textarea('summary')->required()->width(9,3);
 
                 $form->next(function (Form\BlockForm $form) {
@@ -280,8 +279,9 @@ JS
         $data = $request->post();
         $form = new Form();
            try{
-            $article = $service->setTitle($data['title'])
+            $article = $service->setTitle(filterPostTitle($data['title']))
                 ->setKeywords($data['keywords'])
+                ->setPostFunction($data['post_function'])
                 ->setDescription($data['description'])
                 ->setDirFullPath($data['directory_fullpath'])
                 ->setHtmlName($data['html_name'])
@@ -319,9 +319,10 @@ JS
         try{
             $article = $service->setId($data['id'])
                 ->setPostObj()
-                ->setTitle($data['title'])
+                ->setTitle(filterPostTitle($data['title']))
                 ->setHtmlName($data['html_name'])
                 ->setKeywords($data['keywords'])
+                ->setPostFunction($data['post_function'])
                 ->setDescription($data['description'])
                 ->setSummary($data['summary'])
                 ->setContents($data['contents'])

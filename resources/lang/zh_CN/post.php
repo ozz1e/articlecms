@@ -7,6 +7,7 @@ return [
     'fields' => [
         'title' => '文章标题',
         'keywords' => '文章关键字',
+        'function' => '文章功能',
         'description' => '文章描述',
         'directory_fullpath' => '目录',
         'html_fullpath' => '静态页面地址',

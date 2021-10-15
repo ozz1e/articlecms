@@ -30,7 +30,11 @@ function isLogin() {
 //    }
 //
 //    return false;
-    return true;
+    if( \Dcat\Admin\Admin::user()->id ){
+        return true;
+    }
+    return false;
+
 }
 
 /*============================ General Settings =======================================*/

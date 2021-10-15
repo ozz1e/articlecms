@@ -19,7 +19,7 @@ class Post extends Model
 
     public $timestamps = true;
 
-    protected $fillable = ['title','keywords','description','directory_fullpath','html_fullpath','html_name','summary','contents','template_id','template_amp_id','post_status','editor_json','editor_id','lang_id','related_posts','published_at','structured_data','fb_comment','lightbox'];
+    protected $fillable = ['title','keywords','description','directory_fullpath','html_fullpath','html_name','summary','contents','template_id','template_amp_id','post_status','editor_json','editor_id','lang_id','related_posts','published_at','structured_data','fb_comment','lightbox','post_function'];
 
     public function articleNum()
     {

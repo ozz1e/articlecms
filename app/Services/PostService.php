@@ -13,7 +13,6 @@ use App\Models\PostAttr;
 use App\Models\Template;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request;
-use League\Flysystem\Exception;
 
 class PostService
 {
@@ -29,7 +28,7 @@ class PostService
     protected $title;
     /**
      * 文章关键词
-     * @var string
+     * @var array
      */
     protected $keywords;
     /**
@@ -157,6 +156,11 @@ class PostService
      * @var object
      */
     protected $postObj;
+    /**
+     * 文章功能
+     * @var array
+     */
+    protected $post_function;
     /**
      * Post模板的结构化数据模板
      * @var string
@@ -470,6 +474,12 @@ class PostService
     public function setPostAttr( $arr = [] )
     {
         $this->attr = $arr;
+        return $this;
+    }
+
+    public function setPostFunction( $function = [] )
+    {
+        $this->post_function = rtrim(implode(',',$function),',');
         return $this;
     }
 
@@ -1046,6 +1056,7 @@ DOCBOT;
             'structured_data' => $this->structured_data,
             'fb_comment' => $this->fb_comment,
             'lightbox' => $this->lightbox,
+            'post_function'=>$this->post_function,
         ]);
         !empty($this->attr) and PostAttr::insert($this->attr);
     }
@@ -1091,6 +1102,7 @@ DOCBOT;
         $articleInfo->fb_comment = $this->fb_comment;
         $articleInfo->lightbox = $this->lightbox;
         $articleInfo->article_index = $this->article_index;
+        $articleInfo->post_function = $this->post_function;
         if( !$articleInfo->save() ){
             DB::rollBack();
             throw new \Exception('文章修改失败');
