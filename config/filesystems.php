@@ -46,11 +46,18 @@ return [
 
         'admin' => [
             'driver' => 'local',
-//            'root' => public_path('uploads'),
+            'root' => public_path('uploads'),
+//            'root' => base_path('../'),
+            'visibility' => 'public',
+            'url' => env('APP_URL').'/uploads',
+//            'url' => '/',
+        ],
+
+        'editor'=>[
+            'driver' => 'local',
             'root' => base_path('../'),
             'visibility' => 'public',
-//            'url' => env('APP_URL').'/uploads',
-            'url' => '/',
+            'url' => '',
         ],
 
         's3' => [

@@ -2,16 +2,24 @@
 
 namespace App\Admin\Actions;
 
-use Dcat\Admin\Actions\Action;
+use App\Services\EditorService;
 use Dcat\Admin\Actions\Response;
+use Dcat\Admin\Admin;
+use Dcat\Admin\Grid\RowAction;
 use Dcat\Admin\Traits\HasPermissions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
-class DeleteEditor extends Action
+class DeleteEditor extends RowAction
 {
     protected $editorId;
+    /**
+     * 按钮标题
+     * @return string
+     */
+    protected $title = '<i class="feather icon-trash"></i> 删除';
 
     public function __construct($id = null)
     {
@@ -20,31 +28,40 @@ class DeleteEditor extends Action
     }
 
     /**
-     * 按钮标题
-     * @return string
-     */
-//	protected $title = '删除';
-
-    /**
      * Handle the action request.
      *
      * @param Request $request
      *
      * @return Response
      */
-//    public function handle(Request $request)
-//    {
-//        // dump($this->getKey());
-//
-//        return $this->response()->success('Processed successfully.')->redirect('/');
-//    }
+    public function handle(Request $request)
+    {
+        if( !is_numeric($this->getKey()) ){
+            return $this->response()->error('提交作者信息有误');
+        }
+
+        try{
+            $service = new EditorService();
+            $result = $service->setEditorId($this->getKey())
+                ->delete();
+            if( $result ){
+                return $this->response()->success('删除成功')->redirect('/editor');
+            }else{
+                return $this->response()->error('删除失败');
+            }
+        }catch (\Exception $exception){
+            Log::error($exception->getMessage().'发生在文件'.$exception->getFile().'第'.$exception->getLine().'行');
+            return $this->response()->error('删除失败');
+        }
+
+    }
 
     /**
      * @return string|array|void
      */
     public function confirm()
     {
-        // return ['Confirm?', 'contents'];
+         return ['确定要删除吗?', "ID-{$this->getKey()}的作者"];
     }
 
     /**
@@ -57,22 +74,6 @@ class DeleteEditor extends Action
         parent::setupHtmlAttributes();
     }
 
-    /**
-     * 设置按钮的HTML，这里我们需要附加上弹窗的HTML
-     *
-     * @return string|void
-     */
-    public function html()
-    {
-        // 按钮的html
-        $html = parent::html();
-        $url = url('admin/editor');
-
-        return <<<HTML
-{$html}
-<a data-url={$url}/{$this->editorId}/deleteEditor data-message="ID-{$this->editorId}的作者" data-action="delete" data-redirect={$url} style="cursor: pointer" href="javascript:void(0)"><i class="feather icon-trash"></i> 删除 &nbsp;&nbsp;</a>
-HTML;
-    }
 
     /**
      * @param Model|Authenticatable|HasPermissions|null $user
@@ -81,14 +82,11 @@ HTML;
      */
     protected function authorize($user): bool
     {
+        //管理员才有权限进行删除
+        if( !Admin::user()->inRoles(['administrator', 'manager']) ){
+            return false;
+        }
         return true;
     }
 
-    /**
-     * @return array
-     */
-//    protected function parameters()
-//    {
-//        return [];
-//    }
 }

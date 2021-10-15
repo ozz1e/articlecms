@@ -22,12 +22,12 @@ Route::group([
     $router->post('media/upload', 'MediaController@upload')->name('media-upload');
     $router->post('media/folder', 'MediaController@newFolder')->name('media-new-folder');
     //作者管理
-    $router->resource('editor', 'EditorController');
     $router->post('editor/createEditor', 'EditorController@createEditor');
+    $router->any('editor/uploadAvatar', 'EditorController@uploadAvatar');
     $router->put('editor/{id}/updateEditor', 'EditorController@updateEditor');
-    $router->post('editor/uploadAvatar', 'EditorController@uploadAvatar');
     $router->delete('editor/{id}/deleteEditor','EditorController@deleteEditor');
     $router->get('usereditor','UserEditorController@index');
+    $router->resource('editor', 'EditorController');
     //图片管理
     $router->get('image','ImageController@index');
     //模板管理

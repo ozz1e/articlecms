@@ -35,7 +35,7 @@ class EditorRequest extends FormRequest
                 ];
             }
             // UPDATE
-            case 'PUT':
+//            case 'PUT':
             case 'PATCH':
             {
                 return [

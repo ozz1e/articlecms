@@ -216,14 +216,20 @@ class EditorService
             return false;
         }
         if( !$editor->delete() ){
+            Log::error('作者删除失败');
             DB::rollBack();
             return false;
         }
         //删除作者的属性
-        if( !EditorAttr::where('editor_id','=',$this->editorId)->delete() ){
-            DB::rollBack();
-            return false;
+        $attr = EditorAttr::query()->where('editor_id','=',$this->editorId)->first();
+        if( $attr ){
+            if( !$attr->delete() ){
+                Log::error('作者属性删除失败');
+                DB::rollBack();
+                return false;
+            }
         }
+
         //删除作者头像的图片文件
         if( is_file($avatarFilePath) ){
             unlink($avatarFilePath);

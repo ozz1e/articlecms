@@ -28,7 +28,7 @@ class EditorController extends  AdminController
             $grid->column('id');
             $grid->column('lang.lang_name','语言');
             $grid->column('editor_name');
-            $grid->column('editor_avatar')->image('',50,50);
+            $grid->column('editor_avatar')->image('/',50,50);
             $grid->column('attr')->display(function($attr){
                 $tbody = '<div class="table-responsive table-wrapper complex-container table-middle mt-1 table-collapse "><table class="table custom-data-table data-table"><thead><tr><th>属性名</th><th>属性值</th></tr></thead><tbody>';
                 foreach ($attr as $item) {
@@ -89,7 +89,7 @@ class EditorController extends  AdminController
                     }
                 $form->select('lang_id','语言')->required()->options($langSelectList);
                 $form->textarea('editor_intro','简介');
-                $form->image('editor_avatar')->required()->url('editor/uploadAvatar');
+                $form->image('editor_avatar')->required()->disk('editor')->url('editor/uploadAvatar')->removable(false);
                 $gaCodeUrl = EditorAttr::query()->where('editor_id',$editorId)->where('key','ga_code_url')->pluck('value')->toArray();
 
                 $gaFileContent = '';
@@ -103,9 +103,9 @@ class EditorController extends  AdminController
                 //去掉底部查看按钮
                 $form->disableViewCheck();
                 //去掉继续编辑
-                //$form->disableEditingCheck();
+                $form->disableEditingCheck();
                 //去掉继续创建
-                //$form->disableCreatingCheck();
+                $form->disableCreatingCheck();
 
 
 
@@ -257,7 +257,7 @@ class EditorController extends  AdminController
      */
     public function uploadAvatar()
     {
-        $disk= $this->disk('admin');
+        $disk= $this->disk('editor');
         $file = $this->file();
         $dir = '/assets/images/author';
 
