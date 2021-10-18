@@ -162,10 +162,10 @@ class PostService
      */
     protected $post_function;
     /**
-     * Post模板的结构化数据模板
+     * MultCloud的Post模板的结构化数据模板
      * @var string
      */
-    static public $articleJsonTpl = '<script type="application/ld+json">
+    static public $MultCloudArticleJsonTpl = '<script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
@@ -197,10 +197,139 @@ class PostService
 </script>';
 
     /**
-     * Amp模板的结构化数据模板
+     * Ubackup的Post模板的结构化数据模板
      * @var string
      */
-    static public $ampJsonTpl = '<script type="application/ld+json">
+    static public $UbackupArticleJsonTpl = '<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{<title>}",
+  "url": "{<url>}",
+  "keywords": {<keywords-array>},
+  "description": "{<description>}",
+  "image": {<image-url-array>},
+  "mainEntityOfPage": "True",
+  "publisher":{
+      "@type": "Organization",
+      "name": "AOMEI Backupper Utility",
+      "url": "https://www.ubackup.com/",
+      "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.ubackup.com/vendor/static/logo.png",
+          "width": "161",
+          "height": "46"
+      }
+  },
+  "dateCreated": "{<created_at>}",
+  "datePublished": "{<published_at>}",
+  "dateModified": "{<updated_at>}",
+  "author": "{<editor_name>}",
+  "creator": "{<editor_name>}",
+  "articleSection":"{<directory_title>}"
+}</script>';
+
+    /**
+     * Diskpart的Post模板的结构化数据模板
+     * @var string
+     */
+    static public $DiskpartArticleJsonTpl = '
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{<title>}",
+  "url": "{<url>}",
+  "keywords": {<keywords-array>},
+  "description": "{<description>}",
+  "image": {<image-url-array>},
+  "mainEntityOfPage": "True",
+  "publisher":{
+      "@type": "Organization",
+      "name": "AOMEI Partition Assistant",
+      "url": "https://www.diskpart.com/",
+      "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.diskpart.com/assets/images/icons/logo-nav.png",
+          "width": "161",
+          "height": "46"
+      }
+  },
+  "dateCreated": "{<created_at>}",
+  "datePublished": "{<published_at>}",
+  "dateModified": "{<updated_at>}",
+  "author": "{<editor_name>}",
+  "creator": "{<editor_name>}",
+  "articleSection":"{<directory_title>}"
+}</script>';
+
+    /**
+     * Ubackup的Amp模板的结构化数据模板
+     * @var string
+     */
+    static public $UbackpAmpJsonTpl = '<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{<directory_fullpath>}"
+  },
+  "headline": "{<title>}",
+  "image": {<image-url-array>},
+  "dateCreated": "{<created_at>}",
+  "datePublished": "{<published_at>}",
+  "dateModified": "{<updated_at>}",
+  "author": {
+    "@type": "Person",
+    "name": "{<editor_name>}"
+  },
+   "publisher": {
+    "@type": "Organization",
+    "name": "AOMEI Backupper Utility",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.ubackup.com/vendor/static/logo.png"
+    }
+  },
+  "description": "{<description>}"
+}
+</script>';
+
+    static public $DiskpartAmpJsonTpl = '<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{<directory_fullpath>}"
+  },
+  "headline": "{<title>}",
+  "image": {<image-url-array>},
+  "dateCreated": "{<created_at>}",
+  "datePublished": "{<published_at>}",
+  "dateModified": "{<updated_at>}",
+  "author": {
+    "@type": "Person",
+    "name": "{<editor_name>}"
+  },
+   "publisher": {
+    "@type": "Organization",
+    "name": "AOMEI Partition Assistant",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.diskpart.com/assets/images/icons/logo-nav.png"
+    }
+  },
+  "description": "{<description>}"
+}
+</script>';
+
+    /**
+     * MultCloud的Amp模板的结构化数据模板
+     * @var string
+     */
+    static public $MultCloudAmpJsonTpl = '<script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
@@ -404,7 +533,7 @@ class PostService
             '{<url>}' => Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$this->html_fullpath,
             '{<keywords-array>}' => $this->keywords,
             '{<description>}' => $this->description,
-            '{<image-url-array>}' => json_encode($this->matchElementInContent(htmlentities($this->contents),'//img/@src'),JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT),
+            '{<image-url-array>}' => json_encode($this->matchElementInContent(deCodeHtml($this->contents),'//img/@src'),JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT),
             '{<created_at>}' => !is_null($this->created_at) ? $this->created_at : date('F j, Y', time()),
             '{<published_at>}' => !is_null($this->published_at) ? $this->published_at : date('F j, Y', time()),
             '{<updated_at>}' => !is_null($this->updated_at) ? $this->updated_at : date('F j, Y', time()),
@@ -501,7 +630,8 @@ class PostService
      */
     public function getStructureJson(array $data = [], string $type = 'post')
     {
-        $tpl = ($type == 'post') ? static::$articleJsonTpl : static::$ampJsonTpl;
+        //Todo 后期会根据不同的域名替换像一个的模板
+        $tpl = ($type == 'post') ? static::$UbackupArticleJsonTpl : static::$UbackpAmpJsonTpl;
         return htmlentities(strtr($tpl,$data));
     }
 
@@ -1021,9 +1151,27 @@ DOCBOT;
         $arr = [];
         for ($i = 0;$i < $jsonScripts->length; $i++){
             //图片地址需要使用绝对路径
-            $arr[] =  Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$jsonScripts[$i]->nodeValue;
+            //判断nodeValue中是否含有https是为了处理文章block中个别有img标签的情况
+            if( strpos($jsonScripts[$i]->nodeValue,'https') === false ){
+                $arr[] =  Request::server('REQUEST_SCHEME'). '://' . Request::server('SERVER_NAME').$jsonScripts[$i]->nodeValue;
+            }
         }
         return $arr;
+    }
+
+    /**
+     * 在文章内容前增加一个描述文章功能的隐藏域
+     * @param string $content
+     * @return string
+     */
+    public function appendFunctionToContent( $content = '' )
+    {
+        $form = <<<EOF
+<form id="form_function"><input name="post_function" value="{$this->post_function}" hidden="hidden"></form>
+EOF;
+        $content = $form.$content;
+        return $content;
+
     }
 
     /**
@@ -1201,10 +1349,10 @@ DOCBOT;
             '{{read-time}}' => !empty($this->getPostAttr('read_time'))?:$this->getReadTime($this->contents,$this->getLangName($this->lang_id)),//如果没有填写阅读时间则系统自动生成
             '<!--{{quick-search}}-->' => !empty($this->getPostAttr('quick_search'))?html_entity_decode($this->getPostAttr('quick_search')):'',
             '{{post-id}}' => $this->id??($this->postObj)->id,
-            '{{contents}}' => deCodeHtml($this->contents),
+            '{{contents}}' => deCodeHtml($this->appendFunctionToContent($this->contents)),
             '<!--{{next-page}}-->' => !empty($this->getPostAttr('next_page'))?html_entity_decode($this->getPostAttr('next_page')):'',
             '{{html-pathname}}' => $this->html_fullpath,
-            '<!--{{related-articles}}-->' => $this->getRelatedPost($this->related_posts),
+            '<!--{{related-posts}}-->' => $this->getRelatedPost($this->related_posts),
             '<!--{{popular-articles}}-->' => !empty($this->getPostAttr('popular_articles'))?$this->handlePopularArticles(html_entity_decode($this->getPostAttr('popular_articles'))):'',
             '<!--{{comment-system}}-->' => '',
             '{{date-year}}' => date('Y',time()),
