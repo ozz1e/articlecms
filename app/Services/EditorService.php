@@ -159,7 +159,7 @@ class EditorService
         //如果修改作者名称则删除原来的追踪文件
         if( $oldEditName != $this->editorName ){
             $isModifiedEditorName = true;
-            $oldGaFilePath = base_path('../').$this->gaFileDir.$oldEditName.'.js';
+            $oldGaFilePath = base_path('../').$this->gaFileDir.strtolower($oldEditName).'.js';
             is_file($oldGaFilePath) and unlink($oldGaFilePath);
         }
 
@@ -255,7 +255,7 @@ class EditorService
                 return false;
             }
         }
-        $editorGaFilePath = $gaFullDir.$this->editorName.'.js';
+        $editorGaFilePath = $gaFullDir.strtolower($this->editorName).'.js';
         if( !file_put_contents($editorGaFilePath,$this->gaFileCode,LOCK_EX) ){
             DB::rollBack();
             return false;

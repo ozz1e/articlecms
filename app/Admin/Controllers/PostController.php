@@ -171,12 +171,13 @@ class PostController extends AdminController
             $form->block(4, function (Form\BlockForm $form) {
                 //如果登录账号未绑定作者 弹出提示信息 不允许继续操作
                 if( empty($this->editorList()) ){
-                    admin_exit(
-                        Content::make()
-                            ->title('文章')
-                            ->description('列表')
-                            ->body(Alert::make('改账号还未绑定，请联系管理绑定！', '提示')->warning())
-                    );
+//                    admin_exit(
+//                        Content::make()
+//                            ->title('文章')
+//                            ->description('列表')
+//                            ->body(Alert::make('改账号还未绑定作者，请联系管理绑定！', '提示')->warning())
+//                    );
+                    admin_warning('提示', '改账号还未绑定作者，请联系管理绑定！');
                 }
                 $form->select('editor_id')->required()->options($this->editorList())->width(9,3);
                 if( $form->isEditing() ){

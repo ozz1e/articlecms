@@ -23,8 +23,8 @@ Route::group([
     $router->post('media/folder', 'MediaController@newFolder')->name('media-new-folder');
     //作者管理
     $router->post('editor/createEditor', 'EditorController@createEditor');
-    $router->any('editor/uploadAvatar', 'EditorController@uploadAvatar');
     $router->put('editor/{id}/updateEditor', 'EditorController@updateEditor');
+//    $router->any('editor/uploadAvatar', 'EditorController@uploadAvatar');
     $router->delete('editor/{id}/deleteEditor','EditorController@deleteEditor');
     $router->get('usereditor','UserEditorController@index');
     $router->resource('editor', 'EditorController');
