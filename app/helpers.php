@@ -62,10 +62,10 @@ if( !function_exists('checkPostOwner') ){
 }
 
 /**
- * 过滤文章标题中的特殊字符
+ * 过滤文章html文件名的特殊字符
  */
 if( !function_exists('filterPostTitle') ){
-    function filterPostTitle( $title ='' ){
+    function filterPostFileName( $title ='' ){
         $regex = "/\ |\/|\~|\!|\@|\#|\\$|\%|\^|\&|\*|\(|\)|\_|\+|\{|\}|\:|\<|\>|\?|\[|\]|\,|\.|\/|\;|\'|\`|\=|\\\|\|/";
         return preg_replace($regex,"",$title);
     }

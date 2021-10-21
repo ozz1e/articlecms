@@ -378,9 +378,9 @@ class PostService
         return $this;
     }
 
-    public function setKeywords( $keywords = [] )
+    public function setKeywords( $keywords = '' )
     {
-        $this->keywords = rtrim(implode(',',$keywords),',');
+        $this->keywords = trim($keywords,',');
         return $this;
     }
 
@@ -606,9 +606,9 @@ class PostService
         return $this;
     }
 
-    public function setPostFunction( $function = [] )
+    public function setPostFunction( $function = '' )
     {
-        $this->post_function = rtrim(implode(',',$function),',');
+        $this->post_function = trim($function,',');
         return $this;
     }
 

@@ -4,6 +4,7 @@ namespace App\Admin\Controllers;
 
 use App\Admin\Actions\BatchReplaceEditor;
 use App\Admin\Actions\BatchReplaceTemplate;
+use App\Admin\Actions\CopyHtml;
 use App\Admin\Actions\DeletePost;
 use App\Admin\Actions\DestroyPost;
 use App\Admin\Actions\EditorSelect;
@@ -207,8 +208,10 @@ JS
                 }
                 $form->textarea('description')->required()->width(9,3);
                 //Todo 建立关键词库
-                $form->tags('keywords')->width(9,3)->required()->help('键入关键词后以英文逗号结束，回车后即可生成');
-                $form->tags('post_function')->width(9,3)->required()->help('键入功能后以英文逗号结束，回车后即可生成');
+//                $form->tags('keywords')->width(9,3)->required()->help('键入关键词后以英文逗号结束，回车后即可生成');
+                $form->textarea('keywords')->width(9,3)->required();
+//                $form->tags('post_function')->width(9,3)->required()->help('键入功能后以英文逗号结束，回车后即可生成');
+                $form->text('post_function')->width(9,3)->required();
                 $form->textarea('summary')->required()->width(9,3);
 
                 $form->next(function (Form\BlockForm $form) {
@@ -255,6 +258,14 @@ JS
                                 ->body($_form)
                                 ->button('<button class="btn btn-primary post-block-btn" data-cssFileName="'.$item->title.'" data-cssFilePath="'.admin_asset($cssFilePath).'">'.$item->title.'</button>');
                             $form->width(4)->html($$varName);
+                            $copyScript = <<<EOF
+var targetNode = $(this).closest('form').find('textarea');
+targetNode.select();
+document.execCommand("Copy");
+layer.msg("复制成功");
+EOF;
+
+                            $_form->button("复制代码")->on('click', $copyScript);;
                         }
                     });
                 });
@@ -280,12 +291,12 @@ JS
         $data = $request->post();
         $form = new Form();
            try{
-            $article = $service->setTitle(filterPostTitle($data['title']))
+            $article = $service->setTitle($data['title'])
                 ->setKeywords($data['keywords'])
                 ->setPostFunction($data['post_function'])
                 ->setDescription($data['description'])
                 ->setDirFullPath($data['directory_fullpath'])
-                ->setHtmlName($data['html_name'])
+                ->setHtmlName(filterPostFileName($data['html_name']))
                 ->setHtmlFullPath()
                 ->setAmpFullPath($data['html_name'])
                 ->setSummary($data['summary'])
@@ -320,8 +331,8 @@ JS
         try{
             $article = $service->setId($data['id'])
                 ->setPostObj()
-                ->setTitle(filterPostTitle($data['title']))
-                ->setHtmlName($data['html_name'])
+                ->setTitle($data['title'])
+                ->setHtmlName(filterPostFileName($data['html_name']))
                 ->setKeywords($data['keywords'])
                 ->setPostFunction($data['post_function'])
                 ->setDescription($data['description'])

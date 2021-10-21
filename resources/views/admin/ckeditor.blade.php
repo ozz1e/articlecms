@@ -37,7 +37,7 @@
             {name: 'about', groups: ['about']}
         ],
 
-        removeButtons: 'Cut,Copy,Paste,PasteText,PasteFromWord,Print,Preview,ExportPdf,Save,Templates,Replace,Find,SelectAll,Scayt,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Blockquote,CreateDiv,Image,Flash,Table,HorizontalRule,Smiley,PageBreak,Iframe,Maximize,About,Outdent,Indent,Styles,CopyFormatting,RemoveFormat,NewPage,JustifyBlock,Anchor,ShowBlocks,Format,Font,FontSize',
+        removeButtons: 'Cut,Copy,Paste,PasteText,PasteFromWord,Print,Preview,ExportPdf,Save,Templates,Replace,Find,SelectAll,Scayt,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Blockquote,CreateDiv,Image,Flash,Table,HorizontalRule,Smiley,PageBreak,Iframe,Maximize,About,Outdent,Indent,Styles,CopyFormatting,NewPage,JustifyBlock,Anchor,ShowBlocks,Format,Font,FontSize',
 
     });
 
@@ -72,7 +72,7 @@
             {name: 'about', groups: ['about']}
         ],
 
-        removeButtons: 'Cut,Copy,Paste,PasteText,PasteFromWord,Print,Preview,ExportPdf,Save,Templates,Replace,Find,SelectAll,Scayt,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Blockquote,CreateDiv,Image,Flash,Table,HorizontalRule,Smiley,PageBreak,Iframe,Maximize,About,Outdent,Indent,Styles,CopyFormatting,RemoveFormat,NewPage,JustifyBlock,Anchor,ShowBlocks,Format,Font,FontSize',
+        removeButtons: 'Cut,Copy,Paste,PasteText,PasteFromWord,Print,Preview,ExportPdf,Save,Templates,Replace,Find,SelectAll,Scayt,Form,Checkbox,Radio,TextField,Textarea,Select,Button,ImageButton,HiddenField,Blockquote,CreateDiv,Image,Flash,Table,HorizontalRule,Smiley,PageBreak,Iframe,Maximize,About,Outdent,Indent,Styles,CopyFormatting,NewPage,JustifyBlock,Anchor,ShowBlocks,Format,Font,FontSize',
     });
 
     CKEDITOR.on('instanceReady', function (ev) {
@@ -81,7 +81,7 @@
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
                 .replace(/><br \/>/g, '>')
-                .replace(/&nbsp;/g, '')
+                // .replace(/&nbsp;/g, '')
                 .replace(/<p><!--/g, '<!--')
                 .replace(/--><br \/><\/p>/g, '-->')
                 .replace(/<br\s*\/?><\/div>/g, '<\/div>')
